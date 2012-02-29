@@ -1,0 +1,9 @@
+EGOBOO-WII
+
+Egoboo-Wii is a port of the game Egoboo (http://egoboo.sourceforge.net)
+to the Wii. In particular, it is rewritten for low memory usage and to
+use the GX API provided by the Wii homebrew development kit, devkitPro.
+
+At the moment, it is likely uncompilable.
+
+That is all.
