@@ -4,9 +4,11 @@
 #include <ogc/gx.h>
 #include <ogc/video.h>
 
+#include "IDisplay.hpp"
+
 namespace Adventure
 {
-	class WiiDisplay
+	class WiiDisplay : public IDisplay
 	{
 		public:
 			WiiDisplay();
@@ -20,7 +22,7 @@ namespace Adventure
 			void Begin();
 			void End();
 			
-			static const DefaultGraphicsFifoSize = 65536;
+			static const int DefaultGraphicsFifoSize = 65536;
 			
 			// Model vertex formats
 			enum Formats

@@ -16,9 +16,9 @@ namespace Adventure
 			virtual const IDisplay& GetDisplay() const = 0;
 			
 			virtual bool SetApplicationPath(const std::string& path) = 0;
-			const std::string& GetApplicationPath() const = 0;
+			virtual const std::string& GetApplicationPath() const = 0;
 			
-			bool Initialize() = 0;
+			virtual bool Initialize() = 0;
 	};
 }
 

@@ -8,7 +8,7 @@
 
 namespace Adventure
 {
-	class WiiSystem
+	class WiiSystem : public ISystem
 	{
 		public:
 			WiiSystem();

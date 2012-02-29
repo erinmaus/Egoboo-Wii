@@ -35,9 +35,9 @@ Adventure::Vector3& Adventure::Vector3::operator +=(const Vector3& other)
 
 Adventure::Vector3& Adventure::Vector3::operator +=(float other)
 {
-	X += other.X;
-	Y += other.Y;
-	Z += other.Z;
+	X += other;
+	Y += other;
+	Z += other;
 	
 	return *this;
 }
@@ -45,13 +45,13 @@ Adventure::Vector3& Adventure::Vector3::operator +=(float other)
 Adventure::Vector3& Adventure::Vector3::operator -=(const Vector3& other)
 {
 	X -= other.X;
-	Y -= other.Y:
+	Y -= other.Y;
 	Z -= other.Z;
 	
 	return *this;
 }
 
-Adventure::Vector3& Adventure::Vector3::operator -=(const Vector3& other)
+Adventure::Vector3& Adventure::Vector3::operator -=(float other)
 {
 	X -= other;
 	Y -= other;
@@ -66,14 +66,14 @@ Adventure::Vector3& Adventure::Vector3::operator *=(const Vector3& other)
 	Y *= other.Y;
 	Z *= other.Z;
 	
-	return (this;
+	return *this;
 }
 
 Adventure::Vector3& Adventure::Vector3::operator *=(float other)
 {
-	X *= other.X;
-	Y *= other.Y;
-	Z *= other.Z;
+	X *= other;
+	Y *= other;
+	Z *= other;
 	
 	return *this;
 }
@@ -96,37 +96,37 @@ Adventure::Vector3& Adventure::Vector3::operator /=(float other)
 	return *this;
 }
 
-float Adventure::Vector3::CalculateLengthSquared()
+float Adventure::Vector3::CalculateLengthSquared() const
 {
 	return X * X + Y * Y + Z * Z;
 }
 
-float Adventure::Vector3::CalculateLength()
+float Adventure::Vector3::CalculateLength() const
 {
 	return sqrtf(CalculateLengthSquared());
 }
 	
-static Adventure::Vector3& Adventure::Vector3::Normalize(const Vector3& vector)
+Adventure::Vector3 Adventure::Vector3::Normalize(const Vector3& vector)
 {
 	return vector * (1.0f / vector.CalculateLength());
 }
 
-static Adventure::Vector3 Adventure::Vector3::Cross(const Vector3& left, const Vector3& right)
+Adventure::Vector3 Adventure::Vector3::Cross(const Vector3& left, const Vector3& right)
 {
 	return Vector3(left.Y * right.Z - left.Z * right.Y, left.Z * right.X - left.X * right.Z, left.X * right.Y - left.Y * right.X);
 }
 
-static Adventure::Vector3 Adventure::Vector3::Dot(const Vector3& a, const Vector3& b)
+float Adventure::Vector3::Dot(const Vector3& a, const Vector3& b)
 {
 	return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
 }
 
-static float Adventure::Vector3::Distance(const Vector3& from, const Vector3& to)
+float Adventure::Vector3::Distance(const Vector3& from, const Vector3& to)
 {
 	return (from - to).CalculateLength();
 }
 
-static Vector3 Adventure::Vector3::Transform(const Vector3& vector, const Matrix& matrix)
+Adventure::Vector3 Adventure::Vector3::Transform(const Vector3& vector, const Matrix& matrix)
 {
 	return Vector3
 	(
@@ -138,30 +138,30 @@ static Vector3 Adventure::Vector3::Transform(const Vector3& vector, const Matrix
 
 Adventure::Vector3 Adventure::operator +(const Vector3& left, const Vector3& right)
 {
-	return Vector3(*this) += right;
+	return Vector3(left) += right;
 }
 
 Adventure::Vector3 Adventure::operator +(const Vector3& left, float right)
 {
-	return Vector3(*this) += right;
+	return Vector3(left) += right;
 }
 
 Adventure::Vector3 Adventure::operator -(const Vector3& left, const Vector3& right)
 {
-	return Vector3(*this) -= right;
+	return Vector3(left) -= right;
 }
 
 Adventure::Vector3 Adventure::operator -(const Vector3& left, float right)
 {
-	return Vector3(*this) -= right;
+	return Vector3(left) -= right;
 }
 
 Adventure::Vector3 Adventure::operator *(const Vector3& left, const Vector3& right)
 {
-	return Vector3(*this) *= right;
+	return Vector3(left) *= right;
 }
 
 Adventure::Vector3 Adventure::operator *(const Vector3& left, float right)
 {
-	return Vector3(*this) *= right;
+	return Vector3(left) *= right;
 }

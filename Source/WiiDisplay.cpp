@@ -1,3 +1,8 @@
+#include <cstdlib>
+#include <cstring>
+#include <malloc.h>
+#include <ogc/system.h>
+
 #include "WiiDisplay.hpp"
 
 Adventure::WiiDisplay::WiiDisplay()
@@ -11,11 +16,11 @@ Adventure::WiiDisplay::WiiDisplay()
 	graphicsFifo = 0;
 }
 
-Adventure::WiiDisplay::WiiDisplay()
+Adventure::WiiDisplay::~WiiDisplay()
 {
 }
 
-bool Adventure::WiiDisplay::SetGraphicsMode()
+bool Adventure::WiiDisplay::SetGraphicsMode(const GraphicsMode& mode)
 {
 	// There is only one graphics mode on the Wii, which is set by the console itself
 	return true;
@@ -37,7 +42,7 @@ bool Adventure::WiiDisplay::Initialize()
 	
 	VIDEO_WaitVSync();
 	
-	if (renderMode->viTVMode & VT_NON_INTERLACE)
+	if (renderMode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
 	
 	graphicsFifo = memalign(32, DefaultGraphicsFifoSize);
@@ -67,33 +72,35 @@ bool Adventure::WiiDisplay::Initialize()
 		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 		
 	// Prepare the three vertex format types
-	GX_ClearVtxDsc();
+	GX_ClearVtxDesc();
 	
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
-	GX_SetVtxAttrFmt(ModelFormatCompressed, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
-	GX_SetVtxAttrFmt(ModelFormatCompressed, GX_VA_NRM, GX_NRM_XYZ, GX_S16, 14);
-	GX_SetVtxAttrFmt(ModelFormatCompressed, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(ModelFormatCompressed, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_NRM, GX_NRM_XYZ, GX_S16, 14);
+	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
-	GX_SetVtxAttrFmt(ParticleFormatCompressed, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
-	GX_SetVtxAttrFmt(ParticleFormatCompressed, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(ParticleFormatCompressed, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(ParticleCompressedFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+	GX_SetVtxAttrFmt(ParticleCompressedFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GX_SetVtxAttrFmt(ParticleCompressedFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_POS, GX_POS_XY, GX_F32, 0);
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
-	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_POS, GX_POS_XY, GX_S16, 7);
-	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(SpriteCompressedFormat, GX_VA_POS, GX_POS_XY, GX_S16, 7);
+	GX_SetVtxAttrFmt(SpriteCompressedFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GX_SetVtxAttrFmt(SpriteCompressedFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	
+	return true;
 }
 
 void Adventure::WiiDisplay::Begin()

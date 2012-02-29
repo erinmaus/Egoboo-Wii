@@ -1,6 +1,7 @@
 #include <cmath>
 
 #include "Matrix.hpp"
+#include "Vector3.hpp"
 
 Adventure::Matrix::Matrix()
 {
@@ -8,7 +9,7 @@ Adventure::Matrix::Matrix()
 		matrix[i] = 0.0f;
 }
 
-Adventure::Matrix::Matrix(const float& other[16])
+Adventure::Matrix::Matrix(const float other[16])
 {
 	for (int i = 0; i < 16; i++)
 		matrix[i] = other[i];
@@ -43,7 +44,7 @@ Adventure::Matrix::Matrix(const Matrix& other)
 		matrix[i] = other.matrix[i];
 }
 
-Matrix& Adventure::Matrix::operator *=(const Matrix& other)
+Adventure::Matrix& Adventure::Matrix::operator *=(const Matrix& other)
 {
 	for (int i = 0; i < 4; i++)
 	{
@@ -58,7 +59,7 @@ Matrix& Adventure::Matrix::operator *=(const Matrix& other)
 	return *this;
 }
 
-static Adventure::Matrix Adventure::Matrix::Rotate(const Vector3& axis, float angle)
+Adventure::Matrix Adventure::Matrix::Rotate(const Vector3& axis, float angle)
 {
 	float c = cosf(-angle);
 	float s = sinf(-angle);
@@ -73,7 +74,7 @@ static Adventure::Matrix Adventure::Matrix::Rotate(const Vector3& axis, float an
 	);
 }
 
-static Adventure::Matrix Adventure::Matrix::Translate(const Vector3& translation)
+Adventure::Matrix Adventure::Matrix::Translate(const Vector3& translation)
 {
 	return Matrix
 	(
@@ -84,7 +85,7 @@ static Adventure::Matrix Adventure::Matrix::Translate(const Vector3& translation
 	);
 }
 
-static Adventure::Matrix Adventure::Matrix::Scale(const Vector3& scale)
+Adventure::Matrix Adventure::Matrix::Scale(const Vector3& scale)
 {
 	return Matrix
 	(
@@ -95,7 +96,7 @@ static Adventure::Matrix Adventure::Matrix::Scale(const Vector3& scale)
 	);
 }
 
-float Adventure::Matrix::CalculateDeterminant()
+float Adventure::Matrix::CalculateDeterminant() const
 {
 	float a1 = Get(0, 0) * Get(1, 1) - Get(0, 1) * Get(1, 0);
 	float a2 = Get(0, 0) * Get(1, 2) - Get(0, 2) * Get(1, 0);
@@ -112,7 +113,7 @@ float Adventure::Matrix::CalculateDeterminant()
 	return -b4 * Get(3, 0) + b3 * Get(3, 1) - b2 * Get(3, 2) + b1 * Get(3, 3);
 }
 
-static Adventure::Matrix Adventure::Matrix::Invert(const Matrix& matrix)
+Adventure::Matrix Adventure::Matrix::Invert(const Matrix& matrix)
 {
 	float d = 1.0f / matrix.CalculateDeterminant();
 	Matrix result;

@@ -26,8 +26,8 @@ namespace Adventure
 			Vector3& operator /=(float other);
 			
 			// Length
-			float CalculateLengthSquared();
-			float CalculateLength();
+			float CalculateLengthSquared() const;
+			float CalculateLength() const;
 			
 			// Normalization
 			static Vector3 Normalize(const Vector3& vector);

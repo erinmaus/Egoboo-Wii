@@ -1,6 +1,6 @@
 #include "WiiSystem.hpp"
 
-Adventure::WiiSystem::DefaultApplicationPath = "sd://adventure/";
+const std::string Adventure::WiiSystem::DefaultApplicationPath = "sd://adventure/";
 
 Adventure::WiiSystem::WiiSystem()
 {
@@ -24,6 +24,8 @@ const Adventure::IDisplay& Adventure::WiiSystem::GetDisplay() const
 bool Adventure::WiiSystem::SetApplicationPath(const std::string& path)
 {
 	applicationPath = path;
+	
+	return true;
 }
 
 const std::string& Adventure::WiiSystem::GetApplicationPath() const
@@ -35,4 +37,6 @@ bool Adventure::WiiSystem::Initialize()
 {
 	if (!display.Initialize())
 		return false;
+	
+	return true;
 }
