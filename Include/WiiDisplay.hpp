@@ -37,6 +37,9 @@ namespace Adventure
 			void Begin();
 			void End();
 			
+			// Graphic object creation methods
+			ITexture& CreateTexture();
+			
 			static const int DefaultGraphicsFifoSize = 65536;
 			
 			// Model vertex formats

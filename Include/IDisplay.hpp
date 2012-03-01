@@ -18,6 +18,9 @@
 
 namespace Adventure
 {
+	// Forward declarations
+	class ITexture;
+	
 	struct GraphicsMode
 	{
 		public:
@@ -45,11 +48,14 @@ namespace Adventure
 			
 			// Prepares the display to render a scene.
 			// This should be called once per frame, right before drawing.
-			void Begin();
+			virtual void Begin() = 0;
 			
 			// Presents the display to the screen.
 			// As with Begin(), this should only be called once per frame, right after drawing.
-			void End();
+			virtual void End() = 0;
+			
+			// Creates a texture object
+			virtual ITexture& CreateTexture() = 0;
 	};
 }
 

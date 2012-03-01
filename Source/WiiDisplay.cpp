@@ -124,6 +124,14 @@ void Adventure::WiiDisplay::Begin()
 		GX_SetViewportJitter(0.0f, 0.0f, renderMode->fbWidth, renderMode->efbHeight, 0.0f, 1.0f, VIDEO_GetNextField());
 	else
 		GX_SetViewport(0.0f, 0.0f, renderMode->fbWidth, renderMode->efbHeight, 0.0f, 1.0f);
+		
+	// Prepare the TEV
+	GX_SetNumChans(1);
+	GX_SetNumTexGens(1);
+	GX_SetNumTevStages(1);
+	
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0);
+	GX_SetTevOp(GX_TEVSTAGE0, GX_BLEND);
 }
 
 void Adventure::WiiDisplay::End()

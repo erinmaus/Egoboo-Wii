@@ -25,16 +25,31 @@ namespace Adventure
 			
 			enum Format
 			{
+				// The data is expected to be in a RGBA format
 				Rgba8
 			};
 			
 			enum Quality
 			{
-				Nearest,
+				// Point quality
+				Point,
+				
+				// Linear quality
 				Linear
 			};
 			
-			bool SetData(void * data, int width, int height, Format format = Rgba8, Quality quality = Nearest);
+			// Sets the texture data.
+			// The data should be freed after this call, generally.
+			virtual bool SetData(const void * data, int width, int height, Format format = Rgba8, Quality quality = Point) = 0;
+			
+			// Binds the texture
+			virtual bool Bind(int unit) = 0;
+			
+			// Getters for certain values
+			virtual int GetWidth() const = 0;
+			virtual int GetHeight() const = 0;
+			virtual Format GetFormat() const = 0;
+			virtual Quality GetQuality() const = 0;
 	};
 }
 
