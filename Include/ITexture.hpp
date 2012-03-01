@@ -13,36 +13,28 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#ifndef ADVENTURE_SYSTEM_WII_HPP_
-#define ADVENTURE_SYSTEM_WII_HPP_
-
-#include <string>
-
-#include "ISystem.hpp"
-#include "WiiDisplay.hpp"
+#ifndef ADVENTURE_TEXTURE_INTERFACE_HPP_
+#define ADVENTURE_TEXTURE_INTERFACE_HPP_
 
 namespace Adventure
 {
-	class WiiSystem : public ISystem
+	class ITexture
 	{
 		public:
-			WiiSystem();
-			~WiiSystem();
+			virtual ~ITexture() = 0;
 			
-			IDisplay& GetDisplay();
-			const IDisplay& GetDisplay() const;
+			enum Format
+			{
+				Rgba8
+			};
 			
-			bool SetApplicationPath(const std::string& path);
-			const std::string& GetApplicationPath() const;
+			enum Quality
+			{
+				Nearest,
+				Linear
+			};
 			
-			bool Initialize();
-			
-			static const std::string DefaultApplicationPath;
-		
-		private:
-			std::string applicationPath;
-			
-			WiiDisplay display;
+			bool SetData(void * data, int width, int height, Format format = Rgba8, Quality quality = Nearest);
 	};
 }
 
