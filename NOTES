@@ -1,0 +1,5 @@
+Software Light Rendering:
+	- First render the model as normal, without lights
+	- Change blending mode to additive
+	- Render model using specular materials
+	- Profit!

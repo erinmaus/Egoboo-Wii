@@ -13,13 +13,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#include "WiiDisplay.hpp"
-#include "WiiSystem.hpp"
+#ifndef ADVENTURE_COLOR_HPP_
+#define ADVENTURE_COLOR_HPP_
 
-#include "WiiAllocator.hpp"
-#include "ElementArray.hpp"
-
-int main(int argumentCount, char** arguments)
+namespace Adventure
 {
-	return 0;
+	struct Color
+	{
+		public:
+			typedef unsigned char Channel;
+			
+			Color();
+			Color(Channel red, Channel green, Channel blue, Channel alpha = MaxChannelValue);
+			Color(float red, float green, float blue, float alpha = 1.0f);
+			explicit Color(unsigned int color);
+			Color(const Color& other);
+			
+			static const Channel MaxChannelValue = 255;
+			static const Channel MinChannelValue = 0;
+			
+			Channel Red;
+			Channel Green;
+			Channel Blue;
+			Channel Alpha;
+	};
 }
+
+#endif
