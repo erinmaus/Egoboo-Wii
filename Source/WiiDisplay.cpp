@@ -18,7 +18,9 @@
 #include <malloc.h>
 #include <ogc/system.h>
 
+#include "Matrix.hpp"
 #include "WiiDisplay.hpp"
+#include "WiiTexture.hpp"
 
 Adventure::WiiDisplay::WiiDisplay()
 {
@@ -94,26 +96,26 @@ bool Adventure::WiiDisplay::Initialize()
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
-	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
-	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_NRM, GX_NRM_XYZ, GX_S16, 14);
-	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(ModelCompressedFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_NRM, GX_NRM_XYZ, GX_S16, 14);
+	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
-	GX_SetVtxAttrFmt(ParticleCompressedFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
-	GX_SetVtxAttrFmt(ParticleCompressedFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(ParticleCompressedFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_POS, GX_POS_XY, GX_F32, 0);
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
-	GX_SetVtxAttrFmt(SpriteCompressedFormat, GX_VA_POS, GX_POS_XY, GX_S16, 7);
-	GX_SetVtxAttrFmt(SpriteCompressedFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(SpriteCompressedFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_POS, GX_POS_XY, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	return true;
 }
@@ -134,6 +136,11 @@ void Adventure::WiiDisplay::Begin()
 	GX_SetTevOp(GX_TEVSTAGE0, GX_BLEND);
 }
 
+Adventure::ITexture* Adventure::WiiDisplay::CreateTexture()
+{
+	return new WiiTexture(*this);
+}
+
 void Adventure::WiiDisplay::End()
 {
 	// Swap the buffers
@@ -147,4 +154,62 @@ void Adventure::WiiDisplay::End()
 	VIDEO_SetNextFramebuffer(framebuffers[framebufferIndex]);
 	VIDEO_Flush();
 	VIDEO_WaitVSync();
+}
+
+void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals, const void* materials, const void* uvs, const ModelIndexArray& indexArray, bool compressed)
+{
+	GX_ClearVtxDesc();
+	
+	GX_SetVtxDesc(GX_VA_POS, GX_INDEX16);
+	GX_SetVtxDesc(GX_VA_NRM, GX_INDEX16);
+	GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+	GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+	
+	GX_SetArray(GX_VA_POS, (void*)positions, compressed ? CompressedVector3Array::ElementStride : Vector3Array::ElementStride);
+	GX_SetArray(GX_VA_NRM, (void*)normals, compressed ? CompressedNormalArray::ElementStride : NormalArray::ElementStride);
+	GX_SetArray(GX_VA_CLR0, (void*)materials, ColorArray::ElementStride);
+	GX_SetArray(GX_VA_TEX0, (void*)uvs, compressed ? CompressedVector2Array::ElementStride : Vector2Array::ElementStride);
+	
+	GX_Begin(GX_TRIANGLES, compressed ? CompressedModelFormat : ModelFormat, indexArray.GetElementCount());
+	
+	const unsigned short* indices = indexArray.GetElements();
+	for (int i = 0; i < indexArray.GetElementCount(); i += ModelIndexArray::ElementMembers)
+	{
+		GX_Position1x16(indices[i]);
+		GX_Normal1x16(indices[i + 1]);
+		GX_Color1x16(indices[i + 2]);
+		GX_TexCoord1x16(indices[i + 3]);
+	}
+	
+	GX_End();
+}
+
+void Adventure::WiiDisplay::SetProjectionMatrix(const Matrix& matrix, ProjectionHint hint)
+{
+	union
+	{
+		float matrix[16];
+		Mtx44 array;
+	} projectionMatrix;
+	
+	matrix.ToFloat16(projectionMatrix.matrix);
+	
+	if (hint == Perspective)
+		GX_LoadProjectionMtx(projectionMatrix.array, GX_PERSPECTIVE);
+	else
+		GX_LoadProjectionMtx(projectionMatrix.array, GX_ORTHOGRAPHIC);
+}
+
+void Adventure::WiiDisplay::SetModelViewMatrix(const Matrix& matrix)
+{
+	union
+	{
+		float matrix[16];
+		Mtx array;
+	} modelViewMatrix;
+	
+	matrix.ToFloat16(modelViewMatrix.matrix);
+	
+	GX_LoadPosMtxImm(modelViewMatrix.array, GX_PNMTX0);
+	GX_SetCurrentMtx(GX_PNMTX0);
 }

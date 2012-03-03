@@ -14,6 +14,7 @@
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
 #include <cmath>
+#include <cstring>
 
 #include "Matrix.hpp"
 #include "Vector3.hpp"
@@ -57,6 +58,11 @@ Adventure::Matrix::Matrix(const Matrix& other)
 {
 	for (int i = 0; i < 16; i++)
 		matrix[i] = other.matrix[i];
+}
+
+void Adventure::Matrix::ToFloat16(float array[16]) const
+{
+	memcpy(array, matrix, sizeof(float) * 16);
 }
 
 Adventure::Matrix& Adventure::Matrix::operator *=(const Matrix& other)
@@ -154,6 +160,81 @@ Adventure::Matrix Adventure::Matrix::Invert(const Matrix& matrix)
 	result.Set(3, 3, (matrix.Get(0, 0) * matrix.Get(1, 1) * matrix.Get(2, 2) + matrix.Get(0, 1) * matrix.Get(1, 2) * matrix.Get(2, 0) + matrix.Get(0, 2) * matrix.Get(1, 0) * matrix.Get(2, 1) - matrix.Get(0, 0) * matrix.Get(1, 2) * matrix.Get(2, 1) - matrix.Get(0, 1) * matrix.Get(1, 0) * matrix.Get(2, 2) - matrix.Get(0, 2) * matrix.Get(1, 1) * matrix.Get(2, 0)) * d);
 	
 	return result;
+}
+
+Adventure::Matrix Adventure::Matrix::Transpose(const Matrix& matrix)
+{
+	Matrix other;
+	
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			other.Set(j, i, matrix.Get(i, j));
+		}
+	}
+	
+	return other;
+}
+
+Adventure::Matrix Adventure::Matrix::Ortho(float left, float right, float bottom, float top, float near, float far)
+{
+	float rightLeft = 1.0f / (right - left);
+	float topBottom = 1.0f / (top - bottom);
+	float farNear = 1.0f / (far - near);
+	
+	return Matrix
+	(
+		2.0f * rightLeft, 0.0f, 0.0f, -(right + left) * rightLeft,
+		0.0f, 2.0f * topBottom, 0.0f, -(top + bottom) * topBottom, 
+		0.0f, 0.0f, -2.0f * farNear, -(far + near) * farNear,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
+}
+
+Adventure::Matrix Adventure::Matrix::Perspective(float fov, float aspect, float near, float far)
+{
+	float yMax = near * tanf(0.5f * fov);
+	float yMin = -yMax;
+	float xMax = yMax * aspect;
+	float xMin = yMin * aspect;
+	
+	return Frustum(xMin, xMax, yMin, yMax, near, far);
+}
+
+Adventure::Matrix Adventure::Matrix::Frustum(float left, float right, float bottom, float top, float near, float far)
+{
+	float x = (2.0f * near) / (right - left);
+	float y = (2.0f * near) / (top - bottom);
+	float a = (right + left) / (right - left);
+	float b = (top + bottom) / (top - bottom);
+	float c = -(far + near) / (far - near);
+	float d = -(2.0f * far * near) / (far - near);
+
+	return Matrix
+	(
+		x, 0.0f, 0.0f, 0.0f,
+		0.0f, y, 0.0f, 0.0f,
+		a, b, c, -1.0f,
+		0.0f, 0.0f, d, 0.0f
+	);
+}
+
+Adventure::Matrix Adventure::Matrix::LookAt(const Vector3& eye, const Vector3& target, const Vector3& up)
+{
+	Vector3 z = Vector3::Normalize(eye - target);
+	Vector3 x = Vector3::Normalize(Vector3::Cross(up, z));
+	Vector3 y = Vector3::Normalize(Vector3::Cross(z, x));
+	
+	Matrix rotation
+	(
+		x.X, y.X, z.X, 0.0f,
+		x.Y, y.Y, z.Y, 0.0f,
+		x.Z, y.Z, z.Z, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
+	
+	return Translate(-eye) * rotation;
 }
 
 Adventure::Matrix Adventure::operator *(const Matrix& left, const Matrix& right)

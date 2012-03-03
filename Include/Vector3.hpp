@@ -40,6 +40,8 @@ namespace Adventure
 			Vector3& operator /=(const Vector3& other);
 			Vector3& operator /=(float other);
 			
+			Vector3 operator -() const;
+			
 			// Length
 			float CalculateLengthSquared() const;
 			float CalculateLength() const;

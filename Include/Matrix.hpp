@@ -42,6 +42,14 @@ namespace Adventure
 				matrix[(column << 2) + row] = value;
 			}
 			
+			// Cast operator
+			inline operator const float *() const
+			{
+				return matrix;
+			}
+			
+			void ToFloat16(float array[16]) const;
+			
 			// Mathematical operations (for now, only multiplication is supported)
 			Matrix& operator *=(const Matrix& other);
 			
@@ -53,8 +61,17 @@ namespace Adventure
 			static Matrix Translate(const Vector3& translation);
 			static Matrix Scale(const Vector3& scale);
 			
-			// Inverse
-			Matrix Invert(const Matrix& matrix);
+			// Inverse and transpose
+			static Matrix Invert(const Matrix& matrix);
+			static Matrix Transpose(const Matrix& input);
+			
+			// Projection matrices
+			static Matrix Ortho(float left, float right, float bottom, float top, float near, float far);
+			static Matrix Perspective(float fov, float aspect, float near, float far);
+			static Matrix Frustum(float left, float right, float bottom, float top, float near, float far);
+			
+			// Camera (look at)
+			static Matrix LookAt(const Vector3& eye, const Vector3& target, const Vector3& up);
 	};
 	
 	Matrix operator *(const Matrix& left, const Matrix& right);

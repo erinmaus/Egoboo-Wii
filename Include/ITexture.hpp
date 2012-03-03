@@ -43,7 +43,7 @@ namespace Adventure
 			virtual bool SetData(const void * data, int width, int height, Format format = Rgba8, Quality quality = Point) = 0;
 			
 			// Binds the texture
-			virtual bool Bind(int unit) = 0;
+			virtual bool Bind() = 0;
 			
 			// Getters for certain values
 			virtual int GetWidth() const = 0;

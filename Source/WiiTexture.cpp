@@ -13,8 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#include <malloc.h>
 #include <cstdlib>
+#include <ogc/cache.h>
+#include <malloc.h>
 
 #include "WiiDisplay.hpp"
 #include "WiiTexture.hpp"
@@ -58,6 +59,8 @@ void * ConvertRgba8(const void * data, int width, int height)
 			}
 		}
 	}
+	
+	DCFlushRange(output, width * height * 4);
 	
 	return output;
 }
@@ -125,6 +128,9 @@ bool Adventure::WiiTexture::SetData(const void * data, int width, int height, Fo
 
 bool Adventure::WiiTexture::Bind()
 {
+	if (!textureData)
+		return false;
+	
 	GX_LoadTexObj(&textureObject, 0);
 	
 	return true;

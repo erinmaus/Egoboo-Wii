@@ -64,6 +64,9 @@ namespace Adventure
 	typedef ElementConverter<float, CompressedNormalElement, 14> CompressedNormalElementConverter;
 	typedef ElementConverter<Color, Color, 0> ColorElementConverter;
 	
+	typedef ElementConverter<int, unsigned short, 0> NullLargeIndexConverter;
+	typedef ElementConverter<int, unsigned char, 0> NullSmallIndexConverter;
+	
 	typedef unsigned short ElementArrayCount;
 	typedef unsigned long int ElementArrayLength;
 	
@@ -80,6 +83,9 @@ namespace Adventure
 			// This number must be between 1 and 4, inclusive
 			// Otherwise there is a high chance for fatal data corruption
 			static const int ElementMembers = TElementMembers;
+			
+			// The stride between elements
+			static const unsigned char ElementStride = sizeof(ElementType) * ElementMembers;
 			
 			ElementArray(ElementArrayCount count, AllocatorType& allocator)
 				: allocator(allocator)
@@ -98,6 +104,9 @@ namespace Adventure
 			
 			// Gets a pointer to the underlying array
 			const ElementType* GetElements() const { return elements; }
+			
+			// Gets the total element count
+			ElementArrayCount GetElementCount() const { return elementCount; }
 			
 			// Locks the element array
 			// Note: Any stored data is lost
@@ -177,6 +186,31 @@ namespace Adventure
 			ElementType* elements;
 			ElementArrayCount elementCount;
 	};
+	
+	typedef ElementArray<NullElementConverter, 3> Vector3Array;
+	typedef ElementArray<CompressedElementConverter, 3> CompressedVector3Array;
+	
+	typedef ElementArray<NullElementConverter, 2> Vector2Array;
+	typedef ElementArray<CompressedElementConverter, 2> CompressedVector2Array;
+	
+	typedef ElementArray<NullElementConverter, 3> NormalArray;
+	typedef ElementArray<CompressedNormalElementConverter, 3> CompressedNormalArray;
+	
+	typedef ElementArray<ColorElementConverter, 1> ColorArray;
+	
+	// An index array for a model
+	// Composed of position, normal, material, and UV indices (4)
+	typedef ElementArray<NullLargeIndexConverter, 4> ModelIndexArray;
+	
+	// An index for a particle or billboard sprite
+	// Composed of position, color, and UV indices
+	// Large indices are used for a large particle cloud
+	typedef ElementArray<NullLargeIndexConverter, 3> ParticleIndexArray;
+	
+	// An index for a sprite
+	// Composed of position, color, and UV indices
+	// Generally only one quad is drawn per sprite; hence small indices
+	typedef ElementArray<NullSmallIndexConverter, 3> SpriteIndexArray;
 };
 
 #endif

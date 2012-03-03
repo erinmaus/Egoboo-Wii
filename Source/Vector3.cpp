@@ -111,6 +111,11 @@ Adventure::Vector3& Adventure::Vector3::operator /=(float other)
 	return *this;
 }
 
+Adventure::Vector3 Adventure::Vector3::operator -() const
+{
+	return Vector3(-X, -Y, -Z);
+}
+
 float Adventure::Vector3::CalculateLengthSquared() const
 {
 	return X * X + Y * Y + Z * Z;

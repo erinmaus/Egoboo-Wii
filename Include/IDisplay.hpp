@@ -16,10 +16,13 @@
 #ifndef ADVENTURE_DISPLAY_INTERFACE_HPP_
 #define ADVENTURE_DISPLAY_INTERFACE_HPP_
 
+#include "ElementArray.hpp"
+
 namespace Adventure
 {
 	// Forward declarations
 	class ITexture;
+	struct Matrix;
 	
 	struct GraphicsMode
 	{
@@ -55,7 +58,33 @@ namespace Adventure
 			virtual void End() = 0;
 			
 			// Creates a texture object
-			virtual ITexture& CreateTexture() = 0;
+			virtual ITexture* CreateTexture() = 0;
+			
+			// An enumeration that provides the value type of an index
+			enum IndexSize
+			{
+				// unsigned short
+				LargeIndex,
+				
+				// unsigned char
+				SmallIndex
+			};
+			
+			// Draws a model
+			virtual void DrawModel(const void* positions, const void* normals, const void* materials, const void* uvs, const ModelIndexArray& indexArray, bool compressed = true) = 0;
+			
+			// An enumeration that provides a hint as to the projection matrix type
+			enum ProjectionHint
+			{
+				Ortho,
+				Perspective
+			};
+			
+			// Sets the projection matrix
+			virtual void SetProjectionMatrix(const Matrix& matrix, ProjectionHint hint = Perspective) = 0;
+			
+			// Sets the model view matrix
+			virtual void SetModelViewMatrix(const Matrix& matrix) = 0;
 	};
 }
 

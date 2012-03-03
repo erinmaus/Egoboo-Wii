@@ -38,7 +38,13 @@ namespace Adventure
 			void End();
 			
 			// Graphic object creation methods
-			ITexture& CreateTexture();
+			ITexture* CreateTexture();
+			
+			// Drawing routines
+			void DrawModel(const void* positions, const void* normals, const void* materials, const void* uvs, const ModelIndexArray& indexArray, bool compressed);
+			
+			void SetProjectionMatrix(const Matrix& matrix, ProjectionHint hint);
+			void SetModelViewMatrix(const Matrix& matrix);
 			
 			static const int DefaultGraphicsFifoSize = 65536;
 			
@@ -47,15 +53,15 @@ namespace Adventure
 			{
 				// Models
 				ModelFormat = GX_VTXFMT0,
-				ModelCompressedFormat = GX_VTXFMT1,
+				CompressedModelFormat = GX_VTXFMT1,
 				
 				// Particles
 				ParticleFormat = GX_VTXFMT2,
-				ParticleCompressedFormat = GX_VTXFMT3,
+				CompressedParticleFormat = GX_VTXFMT3,
 				
 				// Sprites
 				SpriteFormat = GX_VTXFMT4,
-				SpriteCompressedFormat = GX_VTXFMT5
+				CompressedSpriteFormat = GX_VTXFMT5
 			};
 			
 		private:
