@@ -17,6 +17,7 @@
 #include <cstring>
 #include <malloc.h>
 #include <ogc/system.h>
+#include <ogc/consol.h>
 
 #include "Matrix.hpp"
 #include "WiiDisplay.hpp"
@@ -31,6 +32,8 @@ Adventure::WiiDisplay::WiiDisplay()
 	framebufferIndex = 0;
 	
 	graphicsFifo = 0;
+	
+	initialized = false;
 }
 
 Adventure::WiiDisplay::~WiiDisplay()
@@ -43,8 +46,19 @@ bool Adventure::WiiDisplay::SetGraphicsMode(const GraphicsMode& mode)
 	return true;
 }
 
+Adventure::GraphicsMode Adventure::WiiDisplay::GetGraphicsMode() const
+{
+	if (!initialized)
+		return GraphicsMode(0, 0, true);
+	
+	return GraphicsMode(renderMode->viWidth, renderMode->viHeight, true);
+}
+
 bool Adventure::WiiDisplay::Initialize()
 {
+	if (initialized)
+		return false;
+	
 	VIDEO_Init();
 	
 	renderMode = VIDEO_GetPreferredMode(NULL);
@@ -54,13 +68,17 @@ bool Adventure::WiiDisplay::Initialize()
 	
 	VIDEO_Configure(renderMode);
 	VIDEO_SetNextFramebuffer(framebuffers[framebufferIndex]);
-	VIDEO_SetBlack(false);
 	VIDEO_Flush();
 	
 	VIDEO_WaitVSync();
 	
 	if (renderMode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
+	
+	VIDEO_ClearFrameBuffer(renderMode, framebuffers[0], 0x00800080);
+	VIDEO_ClearFrameBuffer(renderMode, framebuffers[1], 0x00800080);
+	
+	VIDEO_SetBlack(false);
 	
 	graphicsFifo = memalign(32, DefaultGraphicsFifoSize);
 	memset(graphicsFifo, 0, DefaultGraphicsFifoSize);
@@ -71,7 +89,7 @@ bool Adventure::WiiDisplay::Initialize()
 	GXColor backgroundColor = { 0, 0, 0, 0xFF };
 	GX_SetCopyClear(backgroundColor, 0x00FFFFFF);
 	
-	int yScale = GX_GetYScaleFactor(renderMode->efbHeight, renderMode->xfbHeight);
+	float yScale = GX_GetYScaleFactor(renderMode->efbHeight, renderMode->xfbHeight);
 	int externalFramebufferHeight = GX_SetDispCopyYScale(yScale);
 	
 	GX_SetScissor(0, 0, renderMode->fbWidth, renderMode->efbHeight);
@@ -88,34 +106,35 @@ bool Adventure::WiiDisplay::Initialize()
 	else
 		GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 		
-	// Prepare the three vertex format types
+	initialized = true;
+	
 	GX_ClearVtxDesc();
 	
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(ModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	//GX_SetVtxAttrFmt(ModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
 	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_NRM, GX_NRM_XYZ, GX_S16, 14);
 	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	//GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	//GX_SetVtxAttrFmt(ParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
 	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	//GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_POS, GX_POS_XY, GX_F32, 0);
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	//GX_SetVtxAttrFmt(SpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
 	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_POS, GX_POS_XY, GX_S16, 7);
 	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	//GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);	
 	
 	return true;
 }
@@ -129,11 +148,13 @@ void Adventure::WiiDisplay::Begin()
 		
 	// Prepare the TEV
 	GX_SetNumChans(1);
-	GX_SetNumTexGens(1);
+	GX_SetNumTexGens(0);
 	GX_SetNumTevStages(1);
 	
-	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0);
-	GX_SetTevOp(GX_TEVSTAGE0, GX_BLEND);
+	//GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0);
+	//GX_SetTevOp(GX_TEVSTAGE0, GX_BLEND);
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 }
 
 Adventure::ITexture* Adventure::WiiDisplay::CreateTexture()
@@ -147,8 +168,9 @@ void Adventure::WiiDisplay::End()
 	framebufferIndex ^= 1;
 	
 	// Copy the scene to the provided framebuffer
+	GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+	GX_SetColorUpdate(GX_TRUE);
 	GX_CopyDisp(framebuffers[framebufferIndex], GX_TRUE);
-	GX_DrawDone();
 	
 	// Tell the video subsystem to use the provided buffer for the next frame
 	VIDEO_SetNextFramebuffer(framebuffers[framebufferIndex]);
@@ -163,22 +185,28 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 	GX_SetVtxDesc(GX_VA_POS, GX_INDEX16);
 	GX_SetVtxDesc(GX_VA_NRM, GX_INDEX16);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX16);
-	GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+	//GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX16);
 	
 	GX_SetArray(GX_VA_POS, (void*)positions, compressed ? CompressedVector3Array::ElementStride : Vector3Array::ElementStride);
 	GX_SetArray(GX_VA_NRM, (void*)normals, compressed ? CompressedNormalArray::ElementStride : NormalArray::ElementStride);
 	GX_SetArray(GX_VA_CLR0, (void*)materials, ColorArray::ElementStride);
-	GX_SetArray(GX_VA_TEX0, (void*)uvs, compressed ? CompressedVector2Array::ElementStride : Vector2Array::ElementStride);
+	//GX_SetArray(GX_VA_TEX0, (void*)uvs, compressed ? CompressedVector2Array::ElementStride : Vector2Array::ElementStride);
+	
+	GX_InvVtxCache();
+	
+	GX_SetZMode(GX_ENABLE, GX_LEQUAL, GX_TRUE);
+	GX_SetCullMode(GX_CULL_BACK);
 	
 	GX_Begin(GX_TRIANGLES, compressed ? CompressedModelFormat : ModelFormat, indexArray.GetElementCount());
 	
 	const unsigned short* indices = indexArray.GetElements();
-	for (int i = 0; i < indexArray.GetElementCount(); i += ModelIndexArray::ElementMembers)
+	for (int i = 0; i < indexArray.GetElementCount(); i++)
 	{
-		GX_Position1x16(indices[i]);
-		GX_Normal1x16(indices[i + 1]);
-		GX_Color1x16(indices[i + 2]);
-		GX_TexCoord1x16(indices[i + 3]);
+		int index = i * 4;
+		GX_Position1x16(indices[index]);
+		GX_Normal1x16(indices[index + 1]);
+		GX_Color1x16(indices[index + 2]);
+		//GX_TexCoord1x16(indices[index + 3]);
 	}
 	
 	GX_End();
@@ -186,30 +214,34 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 
 void Adventure::WiiDisplay::SetProjectionMatrix(const Matrix& matrix, ProjectionHint hint)
 {
-	union
-	{
-		float matrix[16];
-		Mtx44 array;
-	} projectionMatrix;
+	Mtx44 projectionMatrix;
 	
-	matrix.ToFloat16(projectionMatrix.matrix);
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			projectionMatrix[i][j] = matrix.Get(i, j);
+		}
+	}
 	
 	if (hint == Perspective)
-		GX_LoadProjectionMtx(projectionMatrix.array, GX_PERSPECTIVE);
+		GX_LoadProjectionMtx(projectionMatrix, GX_PERSPECTIVE);
 	else
-		GX_LoadProjectionMtx(projectionMatrix.array, GX_ORTHOGRAPHIC);
+		GX_LoadProjectionMtx(projectionMatrix, GX_ORTHOGRAPHIC);
 }
 
 void Adventure::WiiDisplay::SetModelViewMatrix(const Matrix& matrix)
 {
-	union
+	Mtx modelViewMatrix;
+	
+	for (int i = 0; i < 3; i++)
 	{
-		float matrix[16];
-		Mtx array;
-	} modelViewMatrix;
+		for (int j = 0; j < 4; j++)
+		{
+			modelViewMatrix[i][j] = matrix.Get(i, j);
+		}
+	}
 	
-	matrix.ToFloat16(modelViewMatrix.matrix);
-	
-	GX_LoadPosMtxImm(modelViewMatrix.array, GX_PNMTX0);
 	GX_SetCurrentMtx(GX_PNMTX0);
+	GX_LoadPosMtxImm(modelViewMatrix, GX_PNMTX0);
 }

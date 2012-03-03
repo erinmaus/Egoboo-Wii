@@ -17,6 +17,7 @@
 #define ADVENTURE_WII_ALLOCATOR_HPP_
 
 #include <cstdlib>
+#include <cstring>
 #include <malloc.h>
 #include <ogc/cache.h>
 
@@ -24,35 +25,32 @@
 
 namespace Adventure
 {
-	template <typename TType>
-	class WiiAllocator : Allocator<TType>
+	class WiiAllocator : public Allocator
 	{
 		public:
-			typedef TType AllocatorDataType;
-			
-			AllocatorSizeType RoundSize(AllocatorSizeType value, AllocatorSizeType round)
+			static AllocatorSizeType RoundSize(AllocatorSizeType value, AllocatorSizeType round = 32)
 			{
 				return (value + (round - 1)) & ~(round - 1);
 			}
 			
-			AllocatorDataType* Allocate(AllocatorSizeType count)
+			void* Allocate(AllocatorSizeType size)
 			{
-				return memalign(32, RoundSize(count * sizeof(AllocatorDataType)));
+				return memalign(32, RoundSize(size));
 			}
 			
-			void Clear(AllocatorDataType* memory, AllocatorSizeType count)
-			{
-				if (memory)
-					memset(memory, 0, RoundSize(count * sizeof(AllocatorDataType)));
-			}
-			
-			void Flush(AllocatorDataType* memory, AllocatorSizeType count)
+			void Clear(void* memory, AllocatorSizeType size)
 			{
 				if (memory)
-					DCFlushRange(memory, RoundSize(count * sizeof(AllocatorDataType)));
+					memset(memory, 0, RoundSize(size));
 			}
 			
-			void Deallocate(AllocatorDataType* memory)
+			void Flush(void* memory, AllocatorSizeType size)
+			{
+				if (memory)
+					DCFlushRange(memory, RoundSize(size));
+			}
+			
+			void Deallocate(void* memory)
 			{
 				free(memory);
 			}

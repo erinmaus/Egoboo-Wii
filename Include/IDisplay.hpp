@@ -27,8 +27,19 @@ namespace Adventure
 	struct GraphicsMode
 	{
 		public:
-			GraphicsMode(int width, int height, bool fullscreen = false);
-			GraphicsMode(const GraphicsMode& other);
+			GraphicsMode(int width, int height, bool fullscreen = false)
+			{
+				Width = width;
+				Height = height;
+				IsFullscreen = fullscreen;
+			}
+			
+			GraphicsMode(const GraphicsMode& other)
+			{
+				Width = other.Width;
+				Height = other.Height;
+				IsFullscreen = other.IsFullscreen;
+			}
 			
 			// Members
 			int Width;
@@ -39,12 +50,15 @@ namespace Adventure
 	class IDisplay
 	{
 		public:
-			virtual ~IDisplay() = 0;
+			virtual ~IDisplay() { };
 			
 			// Sets a preferred graphics mode.
 			// Returns false if the mode was failed to set, true otherwise
 			// Note: This method returns true if the mode was ignored (e.g., on the Wii).
 			virtual bool SetGraphicsMode(const GraphicsMode& mode) = 0;
+			
+			// Gets the actual graphics mode
+			virtual GraphicsMode GetGraphicsMode() const = 0;
 			
 			// Initializes the display to a default state
 			virtual bool Initialize() = 0;

@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
+#include <fat.h>
+
 #include "WiiSystem.hpp"
 
 const std::string Adventure::WiiSystem::DefaultApplicationPath = "sd://adventure/";
@@ -50,6 +52,9 @@ const std::string& Adventure::WiiSystem::GetApplicationPath() const
 
 bool Adventure::WiiSystem::Initialize()
 {
+	if (!fatInitDefault())
+		return false;
+	
 	if (!display.Initialize())
 		return false;
 	

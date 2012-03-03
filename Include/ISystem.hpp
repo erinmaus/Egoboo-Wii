@@ -25,7 +25,7 @@ namespace Adventure
 	class ISystem
 	{
 		public:
-			virtual ~ISystem() = 0;
+			virtual ~ISystem() { };
 			
 			virtual IDisplay& GetDisplay() = 0;
 			virtual const IDisplay& GetDisplay() const = 0;

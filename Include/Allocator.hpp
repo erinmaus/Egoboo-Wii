@@ -20,26 +20,25 @@ namespace Adventure
 {
 	typedef unsigned long AllocatorSizeType;
 	
-	template <typename TType>
 	class Allocator
 	{
 		public:
-			typedef TType AllocatorDataType;
+			virtual ~Allocator() { }
 			
 			// Allocates memory
-			virtual AllocatorDataType* Allocate(AllocatorSizeType count) = 0;
+			virtual void* Allocate(AllocatorSizeType size) = 0;
 			
 			// Clears a range of memory
 			// Note: a value of NULL should result in a NOP
-			virtual void Clear(AllocatorDataType* memory, AllocatorSizeType count) = 0;
+			virtual void Clear(void* memory, AllocatorSizeType size) = 0;
 			
 			// Flushes a range of memory
 			// Note: a value of NULL should result in a NOP
-			virtual void Flush(AllocatorDataType* memory, AllocatorSizeType count) = 0;
+			virtual void Flush(void* memory, AllocatorSizeType size) = 0;
 			
 			// Deallocates memory
 			// Note: a value of NULL should result in a NOP
-			virtual void Deallocate(AllocatorDataType* memory) = 0;
+			virtual void Deallocate(void* memory) = 0;
 	};
 }
 

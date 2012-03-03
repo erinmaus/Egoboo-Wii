@@ -21,7 +21,7 @@ namespace Adventure
 	class ITexture
 	{
 		public:
-			virtual ~ITexture() = 0;
+			virtual ~ITexture() { };
 			
 			enum Format
 			{

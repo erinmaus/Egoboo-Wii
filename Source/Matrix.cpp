@@ -187,7 +187,7 @@ Adventure::Matrix Adventure::Matrix::Ortho(float left, float right, float bottom
 	(
 		2.0f * rightLeft, 0.0f, 0.0f, -(right + left) * rightLeft,
 		0.0f, 2.0f * topBottom, 0.0f, -(top + bottom) * topBottom, 
-		0.0f, 0.0f, -2.0f * farNear, -(far + near) * farNear,
+		0.0f, 0.0f, -farNear, -(far) * farNear,
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
 }
@@ -208,33 +208,31 @@ Adventure::Matrix Adventure::Matrix::Frustum(float left, float right, float bott
 	float y = (2.0f * near) / (top - bottom);
 	float a = (right + left) / (right - left);
 	float b = (top + bottom) / (top - bottom);
-	float c = -(far + near) / (far - near);
-	float d = -(2.0f * far * near) / (far - near);
+	float c = -(near) / (far - near);
+	float d = -(near * far) / (far - near);
 
 	return Matrix
 	(
-		x, 0.0f, 0.0f, 0.0f,
-		0.0f, y, 0.0f, 0.0f,
-		a, b, c, -1.0f,
-		0.0f, 0.0f, d, 0.0f
+		x, 0.0f, a, 0.0f,
+		0.0f, y, b, 0.0f,
+		0.0f, 0.0f, c, d,
+		0.0f, 0.0f, -1.0f, 0.0f
 	);
 }
 
 Adventure::Matrix Adventure::Matrix::LookAt(const Vector3& eye, const Vector3& target, const Vector3& up)
 {
-	Vector3 z = Vector3::Normalize(eye - target);
-	Vector3 x = Vector3::Normalize(Vector3::Cross(up, z));
-	Vector3 y = Vector3::Normalize(Vector3::Cross(z, x));
+	Vector3 l = Vector3::Normalize(eye - target); // Look
+	Vector3 r = Vector3::Normalize(Vector3::Cross(up, l)); // Right
+	Vector3 u = Vector3::Normalize(Vector3::Cross(l, r)); // Corrected up
 	
-	Matrix rotation
+	return Matrix
 	(
-		x.X, y.X, z.X, 0.0f,
-		x.Y, y.Y, z.Y, 0.0f,
-		x.Z, y.Z, z.Z, 0.0f,
+		r.X, r.Y, r.Z, -(eye.X * r.X + eye.Y * r.Y + eye.Z * r.Z),
+		u.X, u.Y, u.Z, -(eye.X * u.X + eye.Y * u.Y + eye.Z * u.Z),
+		l.X, l.Y, l.Z, -(eye.X * l.X + eye.Y * l.Y + eye.Z * l.Z),
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
-	
-	return Translate(-eye) * rotation;
 }
 
 Adventure::Matrix Adventure::operator *(const Matrix& left, const Matrix& right)

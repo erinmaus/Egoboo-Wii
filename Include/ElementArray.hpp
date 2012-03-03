@@ -17,6 +17,8 @@
 #define ADVENTURE_ELEMENT_ARRAY_HPP_
 
 #include <cassert>
+#include <cstdlib>
+#include <cstdio>
 
 #include "Allocator.hpp"
 #include "Color.hpp"
@@ -67,8 +69,8 @@ namespace Adventure
 	typedef ElementConverter<int, unsigned short, 0> NullLargeIndexConverter;
 	typedef ElementConverter<int, unsigned char, 0> NullSmallIndexConverter;
 	
-	typedef unsigned short ElementArrayCount;
-	typedef unsigned long int ElementArrayLength;
+	typedef int ElementArrayCount;
+	typedef int ElementArrayLength;
 	
 	template <typename TConverter, int TElementMembers>
 	class ElementArray
@@ -77,29 +79,46 @@ namespace Adventure
 			typedef TConverter ConverterType;
 			typedef typename ConverterType::BaseType BaseType;
 			typedef typename ConverterType::ConversionType ElementType;
-			typedef Allocator<ElementType> AllocatorType;
 			
 			// The amount of members in an element
 			// This number must be between 1 and 4, inclusive
 			// Otherwise there is a high chance for fatal data corruption
 			static const int ElementMembers = TElementMembers;
 			
-			// The stride between elements
-			static const unsigned char ElementStride = sizeof(ElementType) * ElementMembers;
+			// The stride between element members
+			static const int ElementMemberStride = sizeof(ElementType);
 			
-			ElementArray(ElementArrayCount count, AllocatorType& allocator)
-				: allocator(allocator)
+			// The stride between elements
+			static const unsigned int ElementStride = ElementMemberStride * ElementMembers;
+			
+			// Default constructor
+			ElementArray()
 			{
 				assert(ElementMembers >= 1 && ElementMembers <= 4);
 				
-				elementCount = count;
+				isLocked = false;
+				lockedOffset = 0;
 				
-				elements = allocator.Allocate(elementCount, count * ElementMembers);
+				elements = NULL;
+				elementCount = 0;
 			}
 			
 			~ElementArray()
 			{
-				allocator.Deallocate(elements);
+				allocator->Deallocate(elements);
+			}
+			
+			bool Initialize(ElementArrayCount count, Allocator* allocator)
+			{
+				if (IsValid())
+					return false;
+				
+				elementCount = count;
+				this->allocator = allocator;
+				
+				elements = (ElementType*)allocator->Allocate(GetSize());
+				
+				return IsValid();
 			}
 			
 			// Gets a pointer to the underlying array
@@ -108,6 +127,9 @@ namespace Adventure
 			// Gets the total element count
 			ElementArrayCount GetElementCount() const { return elementCount; }
 			
+			// Gets the size in bytes of the internal array
+			AllocatorSizeType GetSize() const { return elementCount * ElementMembers * sizeof(ElementType); }
+			
 			// Locks the element array
 			// Note: Any stored data is lost
 			bool Lock()
@@ -115,7 +137,12 @@ namespace Adventure
 				assert(IsValid());
 				assert(!IsLocked());
 				
-				allocator.Clear(elements, elementCount * ElementMembers);
+				allocator->Clear(elements, GetSize());
+				
+				isLocked = true;
+				lockedOffset = 0;
+				
+				return true;
 			}
 			
 			// Unlocks the element array
@@ -124,7 +151,9 @@ namespace Adventure
 				assert(IsValid());
 				assert(IsLocked());
 				
-				allocator.Flush(elements, elementCount * ElementMembers);
+				allocator->Flush(elements, GetSize());
+				
+				return true;
 			}
 			
 			inline bool IsValid() const { return elements != NULL; }
@@ -132,7 +161,7 @@ namespace Adventure
 			
 			// Buffers data
 			// The function called should match the ElementMembers constant
-			bool Buffer(const BaseType& x)
+			void Buffer(const BaseType& x)
 			{
 				assert(ElementMembers == 1);
 				assert(IsValid());
@@ -141,7 +170,7 @@ namespace Adventure
 				elements[lockedOffset++] = converter.Convert(x);
 			}
 			
-			bool Buffer(const BaseType& x, const BaseType& y)
+			void Buffer(const BaseType& x, const BaseType& y)
 			{
 				assert(ElementMembers == 2);
 				assert(IsValid());
@@ -151,7 +180,7 @@ namespace Adventure
 				elements[lockedOffset++] = converter.Convert(y);
 			}
 			
-			bool Buffer(const BaseType& x, const BaseType& y, const BaseType& z)
+			void Buffer(const BaseType& x, const BaseType& y, const BaseType& z)
 			{
 				assert(ElementMembers == 3);
 				assert(IsValid());
@@ -162,7 +191,7 @@ namespace Adventure
 				elements[lockedOffset++] = converter.Convert(z);
 			}
 			
-			bool Buffer(const BaseType& x, const BaseType& y, const BaseType& z, const BaseType& w)
+			void Buffer(const BaseType& x, const BaseType& y, const BaseType& z, const BaseType& w)
 			{
 				assert(ElementMembers == 4);
 				assert(IsValid());
@@ -177,7 +206,7 @@ namespace Adventure
 		private:
 			ElementArray(const ElementArray<ConverterType, ElementMembers>& other) { }
 			
-			AllocatorType& allocator;
+			Allocator* allocator;
 			ConverterType converter;
 			
 			bool isLocked;

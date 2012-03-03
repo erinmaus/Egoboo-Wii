@@ -19,6 +19,7 @@
 #include <ogc/gx.h>
 #include <ogc/video.h>
 
+#include "ElementArray.hpp"
 #include "IDisplay.hpp"
 
 namespace Adventure
@@ -29,8 +30,10 @@ namespace Adventure
 			WiiDisplay();
 			~WiiDisplay();
 			
-			// Initialization
 			bool SetGraphicsMode(const GraphicsMode& mode);
+			GraphicsMode GetGraphicsMode() const;
+			
+			// Initialization
 			bool Initialize();
 			
 			// Rendering pair
@@ -73,6 +76,8 @@ namespace Adventure
 			int framebufferIndex;
 			
 			void * graphicsFifo;
+			
+			bool initialized;
 	};
 }
 
