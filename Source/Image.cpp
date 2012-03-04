@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 
 #include "Color.hpp"
 #include "File.hpp"
@@ -45,6 +46,8 @@ Adventure::ITexture* Adventure::Image::LoadFromFile(File& file, ImageIdentifier 
 			return LoadTgaFromFile(file, display);
 		
 		case Bmp:
+			return LoadBmpFromFile(file, display);
+			
 		case Png:
 		default:
 			return NULL;
@@ -53,6 +56,131 @@ Adventure::ITexture* Adventure::Image::LoadFromFile(File& file, ImageIdentifier 
 
 #include <fstream>
 
+Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& display)
+{
+	struct
+	{
+		File::UInt8 Type[2];
+		File::UInt32 Size;
+		File::UInt32 Reserved;
+		File::UInt32 Offset;
+	} header;
+	
+	file.Read(header.Type[0]);
+	file.Read(header.Type[1]);
+	
+	if (header.Type[0] != 'B' || header.Type[1] != 'M')
+		return NULL;
+	
+	file.Read(header.Size);
+	file.Read(header.Reserved);
+	file.Read(header.Offset);
+	
+	struct
+	{
+		File::UInt32 Size;
+		File::Int32 Width;
+		File::Int32 Height;
+		File::UInt16 Planes;
+		File::UInt16 Bits;
+		File::UInt32 Compression;
+		File::UInt32 DataSize;
+		File::Int32 XPixelsPerMeter;
+		File::Int32 YPixelsPerMeter;
+		File::UInt32 Colors;
+		File::UInt32 ImportantColors;
+	} info;
+	
+	file.Read(info.Size);
+	file.Read(info.Width);
+	file.Read(info.Height);
+	file.Read(info.Planes);
+	file.Read(info.Bits);
+	
+	if (!(info.Bits == 8 || info.Bits == 24))
+		return NULL;
+	
+	file.Read(info.Compression);
+	file.Read(info.DataSize);
+	file.Read(info.XPixelsPerMeter);
+	file.Read(info.YPixelsPerMeter);
+	file.Read(info.Colors);
+	file.Read(info.ImportantColors);
+	
+	Color* table = NULL;
+	if (info.Bits == 8)
+	{
+		table = new Color[256];
+		
+		for (int i = 0; i < 256; i++)
+		{
+			file.Read(table[i].Blue);
+			file.Read(table[i].Green);
+			file.Read(table[i].Red);
+			table[i].Alpha = Color::MaxChannelValue;
+			
+			File::UInt8 reserved;
+			file.Read(reserved);
+		}
+	}
+	
+	int size = header.Size - header.Offset;
+	File::UInt8* data = new File::UInt8[size];
+	file.GetStream().read((char*)data, size);
+	
+	Color* pixels = new Color[info.Width * abs(info.Height)];
+	
+	int height = abs(info.Height);
+	
+	int width = info.Width * info.Bits / 8; // Only 24 and 8 bit formats supported
+	int stride = (width + 3) & ~3; // Round to nearest multiple of four
+	
+	int y = 0;
+	
+	while (y < height)
+	{
+		if (info.Bits == 8)
+		{
+			for (int i = 0; i < info.Width; i++)
+			{
+				int index = y * stride + i;
+				pixels[index] = table[data[index]];
+			}
+		}
+		else
+		{
+			for (int i = 0; i < info.Width; i++)
+			{
+				int index = y * stride + i;
+				pixels[index].Red = data[index + 2];
+				pixels[index].Green = data[index + 1];
+				pixels[index].Blue = data[index];
+				
+				pixels[index].Alpha = Color::MaxChannelValue;
+			}
+		}
+		
+		y++;
+	}
+	
+	delete[] table;
+	delete[] data;
+	
+	ITexture* texture = display.CreateTexture();
+	
+	if (texture == NULL)
+	{
+		delete[] pixels;
+		return NULL;
+	}
+	
+	texture->SetData(pixels, info.Width, height, ITexture::Rgba8, ITexture::Point);
+	
+	delete[] pixels;
+	
+	return texture;
+}
+
 Adventure::ITexture* Adventure::Image::LoadTgaFromFile(File& file, IDisplay& display)
 {
 	file.GetStream().seekg(2, std::ios::beg);
@@ -60,10 +188,10 @@ Adventure::ITexture* Adventure::Image::LoadTgaFromFile(File& file, IDisplay& dis
 	File::UInt8 type;
 	file.Read(type);
 	
-	if (type != 2) // Type 2 indicates a BGRA image
+	if (type != 2) // Type 2 indicates a regular image
 		return NULL;
 	
-	file.GetStream().seekg(11, std::ios::beg);
+	file.GetStream().seekg(12, std::ios::beg);
 	
 	File::UInt16 width, height;
 	file.Read(width);

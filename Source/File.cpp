@@ -28,12 +28,12 @@ Adventure::File::~File()
 
 Adventure::File::UInt32 Adventure::File::Swap(UInt32 value)
 {
-	return (value << 24) | ((value >> 8) & 0x00FF0000) | ((value >> 8) & 0x0000FF00) | (value << 24);
+	return (value >> 24) | ((value << 8) & 0x00FF0000) | ((value >> 8) & 0x0000FF00) | (value << 24);
 }
 
 Adventure::File::Int32 Adventure::File::Swap(Int32 value)
 {
-	return (value << 24) | ((value >> 8) & 0x00FF0000) | ((value >> 8) & 0x0000FF00) | (value << 24);
+	return (value >> 24) | ((value << 8) & 0x00FF0000) | ((value >> 8) & 0x0000FF00) | (value << 24);
 }
 
 Adventure::File::UInt16 Adventure::File::Swap(UInt16 value)
@@ -51,7 +51,7 @@ bool Adventure::File::Read(UInt32& value)
 	stream.read((char*)&value, sizeof(UInt32));
 	
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	return stream.good();
 }
@@ -61,7 +61,7 @@ bool Adventure::File::Read(Int32& value)
 	stream.read((char*)&value, sizeof(Int32));
 	
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	return stream.good();
 }
@@ -71,7 +71,7 @@ bool Adventure::File::Read(UInt16& value)
 	stream.read((char*)&value, sizeof(UInt16));
 	
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	return stream.good();
 }
@@ -81,7 +81,7 @@ bool Adventure::File::Read(Int16& value)
 	stream.read((char*)&value, sizeof(Int16));
 	
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	return stream.good();
 }
@@ -95,7 +95,7 @@ bool Adventure::File::Read(UInt8& value)
 
 bool Adventure::File::Read(Int8& value)
 {
-	value = (UInt8)stream.get();
+	value = (Int8)stream.get();
 	
 	return stream.good();
 }
@@ -103,7 +103,7 @@ bool Adventure::File::Read(Int8& value)
 bool Adventure::File::Write(UInt32 value)
 {
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	stream.write((char*)&value, sizeof(UInt32));
 	
@@ -113,7 +113,7 @@ bool Adventure::File::Write(UInt32 value)
 bool Adventure::File::Write(Int32 value)
 {
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	stream.write((char*)&value, sizeof(Int32));
 	
@@ -123,7 +123,7 @@ bool Adventure::File::Write(Int32 value)
 bool Adventure::File::Write(UInt16 value)
 {
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	stream.write((char*)&value, sizeof(UInt16));
 	
@@ -133,7 +133,7 @@ bool Adventure::File::Write(UInt16 value)
 bool Adventure::File::Write(Int16 value)
 {
 	if (host != file)
-		Swap(value);
+		value = Swap(value);
 	
 	stream.write((char*)&value, sizeof(Int16));
 	

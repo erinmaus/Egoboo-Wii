@@ -158,15 +158,12 @@ bool CreateCube(Object& object, Adventure::IDisplay& display)
 	object.Indices.Unlock();
 	
 	// Load the texture
-	std::fstream stream("sd:/test.tga", std::ios::in | std::ios::binary);
-	Adventure::File file(stream, Adventure::File::BigEndian);
-	object.Texture = Adventure::Image::LoadTgaFromFile(file, display);
+	std::fstream stream("sd:/test.bmp", std::ios::in | std::ios::binary);
+	Adventure::File file(stream, Adventure::File::BigEndian, Adventure::File::LittleEndian);
+	object.Texture = Adventure::Image::LoadBmpFromFile(file, display);
 	
 	if (!object.Texture)
 		return false;
-	
-	std::fstream output("sd:/output.txt", std::ios::out);
-	output << "x " << object.Texture->GetWidth() << " y " << object.Texture->GetHeight() << std::endl;
 	
 	return true;
 }

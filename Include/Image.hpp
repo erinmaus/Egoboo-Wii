@@ -42,6 +42,9 @@ namespace Adventure
 		
 		// Loads a TGA from a file
 		ITexture* LoadTgaFromFile(File& file, IDisplay& display);
+		
+		// Loads a BMP from a file
+		ITexture* LoadBmpFromFile(File& file, IDisplay& display);
 	}
 }
 
