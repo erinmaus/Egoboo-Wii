@@ -13,10 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#include <cstdio>
-#include <cmath>
+#include <fstream>
 
 #include "ElementArray.hpp"
+#include "File.hpp"
+#include "Image.hpp"
+#include "ITexture.hpp"
 #include "Matrix.hpp"
 #include "Vector3.hpp"
 #include "WiiDisplay.hpp"
@@ -31,11 +33,12 @@ struct Object
 	Adventure::CompressedVector2Array TexCoords;
 	
 	Adventure::ModelIndexArray Indices;
+	Adventure::ITexture* Texture;
 	
 	Adventure::WiiAllocator Allocator;
 };
 
-bool CreateCube(Object& object)
+bool CreateCube(Object& object, Adventure::IDisplay& display)
 {
 	if (!object.Positions.Initialize(8, &object.Allocator))
 		return false;
@@ -72,12 +75,12 @@ bool CreateCube(Object& object)
 	
 	object.Colors.Lock();
 	
+	object.Colors.Buffer(Adventure::Color(1.0f, 1.0f, 1.0f));
 	object.Colors.Buffer(Adventure::Color(1.0f, 0.0f, 0.0f));
 	object.Colors.Buffer(Adventure::Color(0.0f, 1.0f, 0.0f));
 	object.Colors.Buffer(Adventure::Color(0.0f, 0.0f, 1.0f));
 	object.Colors.Buffer(Adventure::Color(1.0f, 1.0f, 0.0f));
 	object.Colors.Buffer(Adventure::Color(1.0f, 0.0f, 1.0f));
-	object.Colors.Buffer(Adventure::Color(0.0f, 1.0f, 1.0f));
 	
 	object.Colors.Unlock();
 	
@@ -154,11 +157,19 @@ bool CreateCube(Object& object)
 	
 	object.Indices.Unlock();
 	
+	// Load the texture
+	std::fstream stream("sd:/test.tga", std::ios::in | std::ios::binary);
+	Adventure::File file(stream, Adventure::File::BigEndian);
+	object.Texture = Adventure::Image::LoadTgaFromFile(file, display);
+	
+	if (!object.Texture)
+		return false;
+	
+	std::fstream output("sd:/output.txt", std::ios::out);
+	output << "x " << object.Texture->GetWidth() << " y " << object.Texture->GetHeight() << std::endl;
+	
 	return true;
 }
-
-#include <gccore.h>
-#include <fstream>
 
 int main(int argumentCount, char** arguments)
 {
@@ -170,7 +181,7 @@ int main(int argumentCount, char** arguments)
 	Adventure::IDisplay& display = system.GetDisplay();
 	Object cube;
 	
-	CreateCube(cube);
+	CreateCube(cube, display);
 	
 	Adventure::GraphicsMode mode = display.GetGraphicsMode();
 	Adventure::Matrix projection = Adventure::Matrix::Perspective(M_PI * 0.25f, (float)mode.Width / (float)mode.Height, 1.0f, 1000.0f);
@@ -179,13 +190,16 @@ int main(int argumentCount, char** arguments)
 	
 	while (true)
 	{
-		rotation += 0.1f;
+		rotation += 0.01f;
+		Adventure::Matrix x = Adventure::Matrix::Rotate(Adventure::Vector3(1.0f, 0.0f, 0.0f), rotation);
+		Adventure::Matrix z = Adventure::Matrix::Rotate(Adventure::Vector3(0.0f, 0.0f, 1.0f), rotation);
 		
 		display.Begin();
 				
 		display.SetProjectionMatrix(projection);
-		display.SetModelViewMatrix(view * Adventure::Matrix::Rotate(Adventure::Vector3(0.0f, 1.0f, 0.0f), rotation));
+		display.SetModelViewMatrix(view * x * z);
 		
+		cube.Texture->Bind();
 		display.DrawModel(cube.Positions.GetElements(), cube.Normals.GetElements(), cube.Colors.GetElements(), cube.TexCoords.GetElements(), cube.Indices, true);
 				
 		display.End();

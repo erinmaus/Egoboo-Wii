@@ -86,7 +86,7 @@ bool Adventure::WiiDisplay::Initialize()
 	GX_Init(graphicsFifo, DefaultGraphicsFifoSize);
 	
 	// Routine GX initialization
-	GXColor backgroundColor = { 0, 0, 0, 0xFF };
+	GXColor backgroundColor = { 0x00, 0, 0, 0xFF };
 	GX_SetCopyClear(backgroundColor, 0x00FFFFFF);
 	
 	float yScale = GX_GetYScaleFactor(renderMode->efbHeight, renderMode->xfbHeight);
@@ -113,28 +113,28 @@ bool Adventure::WiiDisplay::Initialize()
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ModelFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	//GX_SetVtxAttrFmt(ModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GX_SetVtxAttrFmt(ModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
 	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_NRM, GX_NRM_XYZ, GX_S16, 14);
 	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	//GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedModelFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	//GX_SetVtxAttrFmt(ParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GX_SetVtxAttrFmt(ParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
 	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_POS, GX_POS_XYZ, GX_S16, 7);
 	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	//GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
+	GX_SetVtxAttrFmt(CompressedParticleFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_POS, GX_POS_XY, GX_F32, 0);
 	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	//GX_SetVtxAttrFmt(SpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GX_SetVtxAttrFmt(SpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 	
 	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_POS, GX_POS_XY, GX_S16, 7);
 	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	//GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);	
+	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);	
 	
 	return true;
 }
@@ -147,14 +147,12 @@ void Adventure::WiiDisplay::Begin()
 		GX_SetViewport(0.0f, 0.0f, renderMode->fbWidth, renderMode->efbHeight, 0.0f, 1.0f);
 		
 	// Prepare the TEV
+	GX_SetNumTexGens(1);
 	GX_SetNumChans(1);
-	GX_SetNumTexGens(0);
 	GX_SetNumTevStages(1);
 	
-	//GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0);
-	//GX_SetTevOp(GX_TEVSTAGE0, GX_BLEND);
-	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-	GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 }
 
 Adventure::ITexture* Adventure::WiiDisplay::CreateTexture()
@@ -185,12 +183,12 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 	GX_SetVtxDesc(GX_VA_POS, GX_INDEX16);
 	GX_SetVtxDesc(GX_VA_NRM, GX_INDEX16);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX16);
-	//GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+	GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX16);
 	
 	GX_SetArray(GX_VA_POS, (void*)positions, compressed ? CompressedVector3Array::ElementStride : Vector3Array::ElementStride);
 	GX_SetArray(GX_VA_NRM, (void*)normals, compressed ? CompressedNormalArray::ElementStride : NormalArray::ElementStride);
 	GX_SetArray(GX_VA_CLR0, (void*)materials, ColorArray::ElementStride);
-	//GX_SetArray(GX_VA_TEX0, (void*)uvs, compressed ? CompressedVector2Array::ElementStride : Vector2Array::ElementStride);
+	GX_SetArray(GX_VA_TEX0, (void*)uvs, compressed ? CompressedVector2Array::ElementStride : Vector2Array::ElementStride);
 	
 	GX_InvVtxCache();
 	
@@ -206,7 +204,7 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 		GX_Position1x16(indices[index]);
 		GX_Normal1x16(indices[index + 1]);
 		GX_Color1x16(indices[index + 2]);
-		//GX_TexCoord1x16(indices[index + 3]);
+		GX_TexCoord1x16(indices[index + 3]);
 	}
 	
 	GX_End();

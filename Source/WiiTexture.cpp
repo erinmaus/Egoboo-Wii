@@ -14,25 +14,30 @@
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
 #include <cstdlib>
+#include <cstring>
 #include <ogc/cache.h>
 #include <malloc.h>
 
 #include "WiiDisplay.hpp"
 #include "WiiTexture.hpp"
 
+#include "Color.hpp"
+#include <fstream>
+
 // Converts a Rgba8 texture to the native Wii format
 // Note: Refer to YAGCD for specifics on why this code is so ugly
 void * ConvertRgba8(const void * data, int width, int height)
 {
-	unsigned char * input = (unsigned char *)data;
+	const unsigned char * input = (const unsigned char *)data;
 	unsigned char * output = (unsigned char *)memalign(32, width * height * 4);
 	
 	if (output == NULL)
 		return NULL;
 	
+	unsigned char * pixels = output;
 	for (int block = 0; block < height; block += 4)
 	{
-		for (int x = 0; x < width; x++)
+		for (int x = 0; x < width; x += 4)
 		{
 			// Alpha and red values
 			for (int i = 0; i < 4; i++)
@@ -41,8 +46,8 @@ void * ConvertRgba8(const void * data, int width, int height)
 				{
 					int index = (x + j + (block + i) * width) * 4;
 					
-					*output++ = input[index + 3];
-					*output++ = input[index];
+					*pixels++ = input[index + 3];
+					*pixels++ = input[index];
 				}	
 			}
 			
@@ -53,8 +58,8 @@ void * ConvertRgba8(const void * data, int width, int height)
 				{
 					int index = (x + j + (block + i) * width) * 4;
 					
-					*output++ = input[index + 1];
-					*output++ = input[index + 2];
+					*pixels++ = (int)input[index + 1];
+					*pixels++ = (int)input[index + 2];
 				}
 			}
 		}
@@ -131,7 +136,7 @@ bool Adventure::WiiTexture::Bind()
 	if (!textureData)
 		return false;
 	
-	GX_LoadTexObj(&textureObject, 0);
+	GX_LoadTexObj(&textureObject, GX_TEXMAP0);
 	
 	return true;
 }
