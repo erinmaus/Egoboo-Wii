@@ -13,30 +13,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#ifndef ADVENTURE_SYSTEM_INTERFACE_HPP_
-#define ADVENTURE_SYSTEM_INTERFACE_HPP_
+#ifndef ADVENTURE_DEBUG_HPP_
+#define ADVENTURE_DEBUG_HPP_
+#ifndef NDEBUG
 
-#include <string>
+#define ADVENTURE_DEBUG true
+#define ADVENTURE_DEBUG_OUTPUT "sd:/Adventure.txt"
+#define TRACE(module, ...) _adventure_trace(module, __VA_ARGS__)
+#define ASSERT(statement) _adventure_assert(#statement, __FILE__, __LINE__, statement)
 
-namespace Adventure
-{
-	class IDisplay;
-	
-	class ISystem
-	{
-		public:
-			virtual ~ISystem() { };
-			
-			virtual IDisplay& GetDisplay() = 0;
-			virtual const IDisplay& GetDisplay() const = 0;
-			
-			virtual bool SetApplicationPath(const std::string& path) = 0;
-			virtual const std::string& GetApplicationPath() const = 0;
-			
-			virtual std::string BuildPath(const std::string& path) const = 0;
-			
-			virtual bool Initialize() = 0;
-	};
-}
+#define DEBUG_GENERAL 0x01
+#define DEBUG_ALLOCATOR 0x02
+#define DEBUG_SYSTEM 0x04
+#define DEBUG_RENDERING_LOW 0x08
+#define DEBUG_RENDERING_HIGH 0x10
+#define DEBUG_ASSERT 0x20
+#define DEBUG_FILE_LOADING 0x40
 
+void _adventure_trace(int module, const char* format, ...);
+void _adventure_assert(const char* statement, const char* filename, int line, bool result);
+
+#endif
 #endif

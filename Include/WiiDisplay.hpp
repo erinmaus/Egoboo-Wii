@@ -40,8 +40,12 @@ namespace Adventure
 			void Begin();
 			void End();
 			
+			// Allocation setters
+			void SetTextureAllocator(Allocator* allocator);
+			
 			// Graphic object creation methods
 			ITexture* CreateTexture();
+			void DestroyTexture(ITexture* texture);
 			
 			// Drawing routines
 			void DrawModel(const void* positions, const void* normals, const void* materials, const void* uvs, const ModelIndexArray& indexArray, bool compressed);
@@ -71,11 +75,12 @@ namespace Adventure
 			WiiDisplay(const WiiDisplay& other) { }
 			
 			GXRModeObj * renderMode;
-			
 			void * framebuffers[2];
+			void * graphicsFifo;
+			
 			int framebufferIndex;
 			
-			void * graphicsFifo;
+			Allocator* textureAllocator;
 			
 			bool initialized;
 	};

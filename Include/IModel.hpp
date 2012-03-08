@@ -13,42 +13,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#ifndef ADVENTURE_SYSTEM_WII_HPP_
-#define ADVENTURE_SYSTEM_WII_HPP_
-
-#include <string>
-#include <vector>
-
-#include "ISystem.hpp"
-#include "WiiDisplay.hpp"
+#ifndef ADVENTURE_MODEL_INTERFACE_HPP_
+#define ADVENTURE_MODEL_INTERFACE_HPP_
 
 namespace Adventure
 {
-	class WiiSystem : public ISystem
+	class IModelAnimator;
+	
+	class IModel
 	{
 		public:
-			WiiSystem();
-			~WiiSystem();
+			virtual ~IModel() { };
 			
-			IDisplay& GetDisplay();
-			const IDisplay& GetDisplay() const;
-			
-			bool SetApplicationPath(const std::string& path);
-			const std::string& GetApplicationPath() const;
-			
-			std::string BuildPath(const std::string& path) const;
-			
-			bool SetArguments(int count, const char** arguments);
-			
-			bool Initialize();
-			
-			static const std::string DefaultApplicationPath;
-		
-		private:
-			std::string applicationPath;
-			std::vector<std::string> applicationArguments;
-			
-			WiiDisplay display;
+			virtual IModelAnimator* CreateAnimator() = 0;
+			virtual void DestroyAnimator(IModelAnimator* animator) = 0;
 	};
 }
 

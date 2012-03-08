@@ -17,6 +17,7 @@
 #include <cctype>
 #include <cmath>
 
+#include "Allocator.hpp"
 #include "Color.hpp"
 #include "File.hpp"
 #include "IDisplay.hpp"
@@ -38,15 +39,15 @@ Adventure::Image::ImageIdentifier Adventure::Image::IdentifierFromExtension(cons
 	return Unknown;
 }
 
-Adventure::ITexture* Adventure::Image::LoadFromFile(File& file, ImageIdentifier identifier, IDisplay& display)
+Adventure::ITexture* Adventure::Image::LoadFromFile(File& file, ImageIdentifier identifier, IDisplay& display, Allocator* scratch)
 {
 	switch(identifier)
 	{
 		case Tga:
-			return LoadTgaFromFile(file, display);
+			return LoadTgaFromFile(file, display, scratch);
 		
 		case Bmp:
-			return LoadBmpFromFile(file, display);
+			return LoadBmpFromFile(file, display, scratch);
 			
 		case Png:
 		default:
@@ -54,9 +55,7 @@ Adventure::ITexture* Adventure::Image::LoadFromFile(File& file, ImageIdentifier 
 	}
 }
 
-#include <fstream>
-
-Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& display)
+Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& display, Allocator* scratch)
 {
 	struct
 	{
@@ -65,6 +64,8 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 		File::UInt32 Reserved;
 		File::UInt32 Offset;
 	} header;
+	
+	TRACE(DEBUG_FILE_LOADING, "Loading BMP file...");
 	
 	file.Read(header.Type[0]);
 	file.Read(header.Type[1]);
@@ -75,6 +76,8 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 	file.Read(header.Size);
 	file.Read(header.Reserved);
 	file.Read(header.Offset);
+	
+	TRACE(DEBUG_FILE_LOADING, "Loaded header.");
 	
 	struct
 	{
@@ -99,6 +102,8 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 	
 	if (!(info.Bits == 8 || info.Bits == 24))
 		return NULL;
+		
+	TRACE(DEBUG_FILE_LOADING, "BMP is of valid bit depth (8 or 24 bits)");
 	
 	file.Read(info.Compression);
 	file.Read(info.DataSize);
@@ -110,7 +115,9 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 	Color* table = NULL;
 	if (info.Bits == 8)
 	{
-		table = new Color[256];
+		TRACE(DEBUG_FILE_LOADING, "Reading color table...");
+		
+		table = new(scratch) Color[256];
 		
 		for (int i = 0; i < 256; i++)
 		{
@@ -122,13 +129,19 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 			File::UInt8 reserved;
 			file.Read(reserved);
 		}
+		
+		TRACE(DEBUG_FILE_LOADING, "Read color table.");
 	}
 	
+	TRACE(DEBUG_FILE_LOADING, "Reading image data...");
+	
 	int size = header.Size - header.Offset;
-	File::UInt8* data = new File::UInt8[size];
+	File::UInt8* data = new(scratch) File::UInt8[size];
 	file.GetStream().read((char*)data, size);
 	
-	Color* pixels = new Color[info.Width * abs(info.Height)];
+	TRACE(DEBUG_FILE_LOADING, "Read image data.");
+	
+	Color* pixels = new(scratch) Color[info.Width * abs(info.Height)];
 	
 	int height = abs(info.Height);
 	
@@ -136,6 +149,8 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 	int stride = (width + 3) & ~3; // Round to nearest multiple of four
 	
 	int y = 0;
+	
+	TRACE(DEBUG_FILE_LOADING, "Converting image data to RGBA...");
 	
 	while (y < height)
 	{
@@ -152,9 +167,10 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 			for (int i = 0; i < info.Width; i++)
 			{
 				int index = y * stride + i;
-				pixels[index].Red = data[index + 2];
-				pixels[index].Green = data[index + 1];
-				pixels[index].Blue = data[index];
+				int dataIndex = y * stride + i * 4;
+				pixels[index].Red = data[dataIndex + 2];
+				pixels[index].Green = data[dataIndex + 1];
+				pixels[index].Blue = data[dataIndex];
 				
 				pixels[index].Alpha = Color::MaxChannelValue;
 			}
@@ -163,25 +179,36 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 		y++;
 	}
 	
-	delete[] table;
-	delete[] data;
+	TRACE(DEBUG_FILE_LOADING, "Converted image data.");
+	
+	Deallocate(table, scratch);
+	TRACE(DEBUG_FILE_LOADING, "Deallocated color table.");
+	
+	Deallocate(data, scratch);
+	TRACE(DEBUG_FILE_LOADING, "Deallocated image data.");
 	
 	ITexture* texture = display.CreateTexture();
 	
 	if (texture == NULL)
 	{
-		delete[] pixels;
+		Deallocate(pixels, scratch);
 		return NULL;
 	}
 	
 	texture->SetData(pixels, info.Width, height, ITexture::Rgba8, ITexture::Point);
 	
-	delete[] pixels;
+	TRACE(DEBUG_FILE_LOADING, "Texture created and initialize.");
+	
+	Deallocate(pixels, scratch);
+	
+	TRACE(DEBUG_FILE_LOADING, "Deallocated final scratch data.");
+	
+	TRACE(DEBUG_FILE_LOADING, "Loaded BMP file.");
 	
 	return texture;
 }
 
-Adventure::ITexture* Adventure::Image::LoadTgaFromFile(File& file, IDisplay& display)
+Adventure::ITexture* Adventure::Image::LoadTgaFromFile(File& file, IDisplay& display, Allocator* scratch)
 {
 	file.GetStream().seekg(2, std::ios::beg);
 	
@@ -209,7 +236,7 @@ Adventure::ITexture* Adventure::Image::LoadTgaFromFile(File& file, IDisplay& dis
 	
 	file.GetStream().seekg(18, std::ios::beg);
 	
-	Color* pixelData = new Color[pixels];
+	Color* pixelData = new(scratch) Color[pixels];
 	
 	for (int i = 0; i < pixels; i++)
 	{
@@ -228,13 +255,13 @@ Adventure::ITexture* Adventure::Image::LoadTgaFromFile(File& file, IDisplay& dis
 	
 	if (texture == NULL)
 	{
-		delete[] pixelData;
+		Deallocate(pixelData, scratch);
 		return NULL;
 	}
 	
 	texture->SetData(pixelData, width, height, ITexture::Rgba8, ITexture::Point);
 	
-	delete[] pixelData;
+	Deallocate(pixelData, scratch);
 		
 	return texture;
 }

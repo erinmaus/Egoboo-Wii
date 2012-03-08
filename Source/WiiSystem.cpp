@@ -17,7 +17,7 @@
 
 #include "WiiSystem.hpp"
 
-const std::string Adventure::WiiSystem::DefaultApplicationPath = "sd://adventure/";
+const std::string Adventure::WiiSystem::DefaultApplicationPath = "sd:/adventure/";
 
 Adventure::WiiSystem::WiiSystem()
 {
@@ -50,13 +50,39 @@ const std::string& Adventure::WiiSystem::GetApplicationPath() const
 	return applicationPath;
 }
 
+bool Adventure::WiiSystem::SetArguments(int count, const char** arguments)
+{
+	applicationArguments.clear();
+	
+	for (int i = 0; i < count; i++)
+		applicationArguments.push_back(arguments[i]);
+	
+	// Set the application path from applicationArguments[0]
+	std::string path = applicationArguments[0].substr(0, applicationArguments[0].find_last_of("/"));
+	
+	return SetApplicationPath(path);
+}
+
+std::string Adventure::WiiSystem::BuildPath(const std::string& path) const
+{
+	return applicationPath + path;
+}
+
 bool Adventure::WiiSystem::Initialize()
 {
 	if (!fatInitDefault())
 		return false;
+
+#ifdef ADVENTURE_DEBUG
+	{
+		remove(ADVENTURE_DEBUG_OUTPUT);
+	}
+#endif
+	TRACE(DEBUG_SYSTEM, "Initialized FAT.");
 	
 	if (!display.Initialize())
 		return false;
+	TRACE(DEBUG_SYSTEM, "Initialized display.");
 	
 	return true;
 }

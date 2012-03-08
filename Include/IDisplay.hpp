@@ -21,6 +21,7 @@
 namespace Adventure
 {
 	// Forward declarations
+	class Allocator;
 	class ITexture;
 	struct Matrix;
 	
@@ -71,8 +72,15 @@ namespace Adventure
 			// As with Begin(), this should only be called once per frame, right after drawing.
 			virtual void End() = 0;
 			
+			// Sets the texture allocator
+			// This must be called before creating textures
+			virtual void SetTextureAllocator(Allocator* allocator) = 0;
+			
 			// Creates a texture object
 			virtual ITexture* CreateTexture() = 0;
+			
+			// Destroys a texture object
+			virtual void DestroyTexture(ITexture* texture) = 0;
 			
 			// An enumeration that provides the value type of an index
 			enum IndexSize

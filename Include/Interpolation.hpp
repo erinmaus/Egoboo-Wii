@@ -13,30 +13,21 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#ifndef ADVENTURE_SYSTEM_INTERFACE_HPP_
-#define ADVENTURE_SYSTEM_INTERFACE_HPP_
-
-#include <string>
+#ifndef ADVENTURE_INTERPOLATION_HPP_
+#define ADVENTURE_INTERPOLATION_HPP_
 
 namespace Adventure
 {
-	class IDisplay;
-	
-	class ISystem
+	namespace Math
 	{
-		public:
-			virtual ~ISystem() { };
+		template<typename TType>
+		inline TType QuadraticInterpolate(TType p1, TType p2, TType p3, float mu)
+		{
+			float inverseMu = (1.0f - mu);
 			
-			virtual IDisplay& GetDisplay() = 0;
-			virtual const IDisplay& GetDisplay() const = 0;
-			
-			virtual bool SetApplicationPath(const std::string& path) = 0;
-			virtual const std::string& GetApplicationPath() const = 0;
-			
-			virtual std::string BuildPath(const std::string& path) const = 0;
-			
-			virtual bool Initialize() = 0;
-	};
+			return (p1 * inverseMu * inverseMu) + (p2 * 2.0f * inverseMu * mu) + (p3 * mu * mu);
+		}
+	}
 }
 
 #endif

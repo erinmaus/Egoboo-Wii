@@ -16,7 +16,7 @@
 #ifndef ADVENTURE_ELEMENT_ARRAY_HPP_
 #define ADVENTURE_ELEMENT_ARRAY_HPP_
 
-#include <cassert>
+#include <cASSERT>
 #include <cstdlib>
 #include <cstdio>
 
@@ -94,7 +94,7 @@ namespace Adventure
 			// Default constructor
 			ElementArray()
 			{
-				assert(ElementMembers >= 1 && ElementMembers <= 4);
+				ASSERT(ElementMembers >= 1 && ElementMembers <= 4);
 				
 				isLocked = false;
 				lockedOffset = 0;
@@ -116,6 +116,7 @@ namespace Adventure
 				elementCount = count;
 				this->allocator = allocator;
 				
+				TRACE(DEBUG_RENDERING_LOW, "Allocating element array, 0x%lx bytes...", GetSize());
 				elements = (ElementType*)allocator->Allocate(GetSize());
 				
 				return IsValid();
@@ -134,8 +135,8 @@ namespace Adventure
 			// Note: Any stored data is lost
 			bool Lock()
 			{
-				assert(IsValid());
-				assert(!IsLocked());
+				ASSERT(IsValid());
+				ASSERT(!IsLocked());
 				
 				allocator->Clear(elements, GetSize());
 				
@@ -148,8 +149,8 @@ namespace Adventure
 			// Unlocks the element array
 			bool Unlock()
 			{
-				assert(IsValid());
-				assert(IsLocked());
+				ASSERT(IsValid());
+				ASSERT(IsLocked());
 				
 				allocator->Flush(elements, GetSize());
 				
@@ -163,44 +164,56 @@ namespace Adventure
 			// The function called should match the ElementMembers constant
 			void Buffer(const BaseType& x)
 			{
-				assert(ElementMembers == 1);
-				assert(IsValid());
-				assert(IsLocked());
+				ASSERT(ElementMembers == 1);
+				ASSERT(IsValid());
+				ASSERT(IsLocked());
+				ASSERT(lockedOffset + 1 <= elementCount * ElementMembers);
 				
 				elements[lockedOffset++] = converter.Convert(x);
+				
+				ASSERT(lockedOffset <= elementCount * ElementMembers);
 			}
 			
 			void Buffer(const BaseType& x, const BaseType& y)
 			{
-				assert(ElementMembers == 2);
-				assert(IsValid());
-				assert(IsLocked());
+				ASSERT(ElementMembers == 2);
+				ASSERT(IsValid());
+				ASSERT(IsLocked());
+				ASSERT(lockedOffset + 2 <= elementCount * ElementMembers);
 				
 				elements[lockedOffset++] = converter.Convert(x);
 				elements[lockedOffset++] = converter.Convert(y);
+				
+				ASSERT(lockedOffset <= elementCount * ElementMembers);
 			}
 			
 			void Buffer(const BaseType& x, const BaseType& y, const BaseType& z)
 			{
-				assert(ElementMembers == 3);
-				assert(IsValid());
-				assert(IsLocked());
+				ASSERT(ElementMembers == 3);
+				ASSERT(IsValid());
+				ASSERT(IsLocked());
+				ASSERT(lockedOffset + 3 <= elementCount * ElementMembers);
 				
 				elements[lockedOffset++] = converter.Convert(x);
 				elements[lockedOffset++] = converter.Convert(y);
 				elements[lockedOffset++] = converter.Convert(z);
+				
+				ASSERT(lockedOffset <= elementCount * ElementMembers);
 			}
 			
 			void Buffer(const BaseType& x, const BaseType& y, const BaseType& z, const BaseType& w)
 			{
-				assert(ElementMembers == 4);
-				assert(IsValid());
-				assert(IsLocked());
+				ASSERT(ElementMembers == 4);
+				ASSERT(IsValid());
+				ASSERT(IsLocked());
+				ASSERT(lockedOffset + 4 <= elementCount * ElementMembers);
 				
 				elements[lockedOffset++] = converter.Convert(x);
 				elements[lockedOffset++] = converter.Convert(y);
 				elements[lockedOffset++] = converter.Convert(z);
 				elements[lockedOffset++] = converter.Convert(w);
+				
+				ASSERT(lockedOffset <= elementCount * ElementMembers);
 			}
 			
 		private:
@@ -214,6 +227,34 @@ namespace Adventure
 			
 			ElementType* elements;
 			ElementArrayCount elementCount;
+	};
+	
+	// Locks an element array upon creation and unlocks it when the scope is lost
+	template<typename TElementArray>
+	struct ElementArrayLock
+	{
+		public:
+			typedef TElementArray ElementArrayType;
+			
+			ElementArrayType& ElementArray;
+			
+			explicit ElementArrayLock(ElementArrayType& elementArray)
+				: ElementArray(elementArray)
+			{
+				if (!ElementArray.Lock())
+					TRACE(DEBUG_RENDERING_LOW, "Could not lock element array");
+			}
+			
+			~ElementArrayLock()
+			{
+				if (ElementArray.IsLocked())
+					ElementArray.Unlock();
+			}
+			
+			operator bool() const
+			{
+				return ElementArray.IsLocked();
+			}
 	};
 	
 	typedef ElementArray<NullElementConverter, 3> Vector3Array;

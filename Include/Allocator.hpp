@@ -16,10 +16,12 @@
 #ifndef ADVENTURE_ALLOCATOR_HPP_
 #define ADVENTURE_ALLOCATOR_HPP_
 
+#include <cstdlib>
+
 namespace Adventure
 {
 	typedef unsigned long AllocatorSizeType;
-	
+		
 	class Allocator
 	{
 		public:
@@ -40,6 +42,19 @@ namespace Adventure
 			// Note: a value of NULL should result in a NOP
 			virtual void Deallocate(void* memory) = 0;
 	};
+	
+	template<typename Type>
+	void Deallocate(Type* pointer, Allocator* allocator)
+	{
+		if (pointer != NULL)
+		{
+			pointer->~Type();
+			allocator->Deallocate(pointer);
+		}
+	}
 }
+
+void* operator new(size_t size, Adventure::Allocator* allocator);
+void* operator new[](size_t size, Adventure::Allocator* allocator);
 
 #endif

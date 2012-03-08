@@ -46,6 +46,12 @@ bool Adventure::WiiDisplay::SetGraphicsMode(const GraphicsMode& mode)
 	return true;
 }
 
+void Adventure::WiiDisplay::SetTextureAllocator(Allocator* allocator)
+{
+	if (textureAllocator == NULL)
+		textureAllocator = allocator;
+}
+
 Adventure::GraphicsMode Adventure::WiiDisplay::GetGraphicsMode() const
 {
 	if (!initialized)
@@ -134,7 +140,7 @@ bool Adventure::WiiDisplay::Initialize()
 	
 	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_POS, GX_POS_XY, GX_S16, 7);
 	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);	
+	GX_SetVtxAttrFmt(CompressedSpriteFormat, GX_VA_TEX0, GX_TEX_ST, GX_S16, 7);
 	
 	return true;
 }
@@ -157,7 +163,12 @@ void Adventure::WiiDisplay::Begin()
 
 Adventure::ITexture* Adventure::WiiDisplay::CreateTexture()
 {
-	return new WiiTexture(*this);
+	return new(textureAllocator) WiiTexture(*this, textureAllocator);
+}
+
+void Adventure::WiiDisplay::DestroyTexture(ITexture* texture)
+{
+	Deallocate(texture, textureAllocator);
 }
 
 void Adventure::WiiDisplay::End()

@@ -20,6 +20,7 @@
 #include "Image.hpp"
 #include "ITexture.hpp"
 #include "Matrix.hpp"
+#include "PooledAllocator.hpp"
 #include "Vector3.hpp"
 #include "WiiDisplay.hpp"
 #include "WiiSystem.hpp"
@@ -35,13 +36,18 @@ struct Object
 	Adventure::ModelIndexArray Indices;
 	Adventure::ITexture* Texture;
 	
-	Adventure::WiiAllocator Allocator;
+	Adventure::Allocator* TexturePool;
+	Adventure::Allocator* ElementPool;
+	Adventure::Allocator* ScratchPool;
 };
 
-bool CreateCube(Object& object, Adventure::IDisplay& display)
+bool CreateCube(Object& object, Adventure::ISystem& system)
 {
-	if (!object.Positions.Initialize(8, &object.Allocator))
+	if (!object.Positions.Initialize(8, object.ElementPool))
+	{
+		TRACE(DEBUG_GENERAL, "Couldn't allocate positions!");
 		return false;
+	}
 	
 	object.Positions.Lock();
 	
@@ -56,8 +62,11 @@ bool CreateCube(Object& object, Adventure::IDisplay& display)
 	
 	object.Positions.Unlock();
 	
-	if (!object.Normals.Initialize(6, &object.Allocator))
+	if (!object.Normals.Initialize(6, object.ElementPool))
+	{
+		TRACE(DEBUG_GENERAL, "Couldn't allocate normals!");
 		return false;
+	}
 	
 	object.Normals.Lock();
 	
@@ -70,8 +79,11 @@ bool CreateCube(Object& object, Adventure::IDisplay& display)
 	
 	object.Normals.Unlock();
 	
-	if (!object.Colors.Initialize(6, &object.Allocator))
+	if (!object.Colors.Initialize(6, object.ElementPool))
+	{
+		TRACE(DEBUG_GENERAL, "Couldn't allocate colors!");
 		return false;
+	}
 	
 	object.Colors.Lock();
 	
@@ -84,8 +96,11 @@ bool CreateCube(Object& object, Adventure::IDisplay& display)
 	
 	object.Colors.Unlock();
 	
-	if (!object.TexCoords.Initialize(4, &object.Allocator))
+	if (!object.TexCoords.Initialize(4, object.ElementPool))
+	{
+		TRACE(DEBUG_GENERAL, "Couldn't allocate texture coordinates!");
 		return false;
+	}
 	
 	object.TexCoords.Lock();
 	
@@ -96,8 +111,11 @@ bool CreateCube(Object& object, Adventure::IDisplay& display)
 	
 	object.TexCoords.Unlock();
 	
-	if (!object.Indices.Initialize(36, &object.Allocator))
+	if (!object.Indices.Initialize(36, object.ElementPool))
+	{
+		TRACE(DEBUG_GENERAL, "Couldn't allocate indices");
 		return false;
+	}
 		
 	object.Indices.Lock();
 	
@@ -158,12 +176,15 @@ bool CreateCube(Object& object, Adventure::IDisplay& display)
 	object.Indices.Unlock();
 	
 	// Load the texture
-	std::fstream stream("sd:/test.bmp", std::ios::in | std::ios::binary);
-	Adventure::File file(stream, Adventure::File::BigEndian, Adventure::File::LittleEndian);
-	object.Texture = Adventure::Image::LoadBmpFromFile(file, display);
+	std::fstream stream("sd:/Content/tris0.bmp", std::ios::in | std::ios::binary);
+	Adventure::File file(stream, Adventure::File::BigEndian);
+	object.Texture = Adventure::Image::LoadBmpFromFile(file, system.GetDisplay(), object.ScratchPool);
 	
 	if (!object.Texture)
+	{
+		TRACE(DEBUG_GENERAL, "Couldn't allocate texture!");
 		return false;
+	}
 	
 	return true;
 }
@@ -171,14 +192,39 @@ bool CreateCube(Object& object, Adventure::IDisplay& display)
 int main(int argumentCount, char** arguments)
 {
 	Adventure::WiiSystem system;
+	Adventure::WiiAllocator baseAllocator;
+	Adventure::PooledAllocator texturePool(&baseAllocator, 32, 2560);
+	Adventure::PooledAllocator elementPool(&baseAllocator, 32, 2560);
+	Adventure::PooledAllocator scratchPool(&baseAllocator, 32, 1280);
+	
+	system.SetArguments(argumentCount, (const char**)arguments);
 	
 	if (!system.Initialize())
+	{
+		TRACE(DEBUG_GENERAL, "System initialized failed!");
 		return 1;
+	}
+	TRACE(DEBUG_GENERAL, "System initialized.");
 	
 	Adventure::IDisplay& display = system.GetDisplay();
+	display.SetTextureAllocator(&texturePool);
+	
 	Object cube;
 	
-	CreateCube(cube, display);
+	cube.TexturePool = &texturePool;
+	cube.ElementPool = &elementPool;
+	cube.ScratchPool = &scratchPool;
+	
+	if (!CreateCube(cube, system))
+	{
+		TRACE(DEBUG_GENERAL, "Couldn't create cube!");
+		return false;
+	}
+	TRACE(DEBUG_GENERAL, "Cube created.");
+	
+	TRACE(DEBUG_GENERAL, "Memory usage for texture pool: 0x%lx bytes", texturePool.GetMemoryUsage());
+	TRACE(DEBUG_GENERAL, "Memory usage for element pool: 0x%lx bytes", elementPool.GetMemoryUsage());
+	TRACE(DEBUG_GENERAL, "Memory usage for scratch pool: 0x%lx bytes", scratchPool.GetMemoryUsage());
 	
 	Adventure::GraphicsMode mode = display.GetGraphicsMode();
 	Adventure::Matrix projection = Adventure::Matrix::Perspective(M_PI * 0.25f, (float)mode.Width / (float)mode.Height, 1.0f, 1000.0f);

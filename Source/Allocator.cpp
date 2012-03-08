@@ -13,30 +13,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#ifndef ADVENTURE_SYSTEM_INTERFACE_HPP_
-#define ADVENTURE_SYSTEM_INTERFACE_HPP_
+#include <memory>
 
-#include <string>
+#include "Allocator.hpp"
 
-namespace Adventure
+void* operator new(size_t size, Adventure::Allocator* allocator)
 {
-	class IDisplay;
-	
-	class ISystem
-	{
-		public:
-			virtual ~ISystem() { };
-			
-			virtual IDisplay& GetDisplay() = 0;
-			virtual const IDisplay& GetDisplay() const = 0;
-			
-			virtual bool SetApplicationPath(const std::string& path) = 0;
-			virtual const std::string& GetApplicationPath() const = 0;
-			
-			virtual std::string BuildPath(const std::string& path) const = 0;
-			
-			virtual bool Initialize() = 0;
-	};
+	return allocator->Allocate(size);
 }
 
-#endif
+void* operator new[](size_t size, Adventure::Allocator* allocator)
+{
+	return allocator->Allocate(size);
+}

@@ -70,7 +70,7 @@ void * ConvertRgba8(const void * data, int width, int height)
 	return output;
 }
 
-Adventure::WiiTexture::WiiTexture(WiiDisplay& display)
+Adventure::WiiTexture::WiiTexture(WiiDisplay& display, Allocator* allocator)
 	: display(display)
 {
 	textureData = NULL;

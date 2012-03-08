@@ -27,7 +27,7 @@ namespace Adventure
 	class WiiTexture : public ITexture
 	{
 		public:
-			WiiTexture(WiiDisplay& display);
+			WiiTexture(WiiDisplay& display, Allocator* allocator);
 			~WiiTexture();
 			
 			bool SetData(const void * data, int width, int height, Format format, Quality quality);
@@ -41,6 +41,7 @@ namespace Adventure
 		
 		private:
 			WiiDisplay& display;
+			Allocator* allocator;
 			
 			GXTexObj textureObject;
 			void * textureData;

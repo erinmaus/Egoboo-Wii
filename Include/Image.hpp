@@ -20,6 +20,7 @@
 
 namespace Adventure
 {
+	class Allocator;
 	class File;
 	class ITexture;
 	class IDisplay;
@@ -38,13 +39,13 @@ namespace Adventure
 		ImageIdentifier IdentifierFromExtension(const std::string& extension);
 		
 		// Loads an image of the provided type from a file
-		ITexture* LoadFromFile(File& file, ImageIdentifier identifier, IDisplay& display);
+		ITexture* LoadFromFile(File& file, ImageIdentifier identifier, IDisplay& display, Allocator* scratch);
 		
 		// Loads a TGA from a file
-		ITexture* LoadTgaFromFile(File& file, IDisplay& display);
+		ITexture* LoadTgaFromFile(File& file, IDisplay& display, Allocator* scratch);
 		
 		// Loads a BMP from a file
-		ITexture* LoadBmpFromFile(File& file, IDisplay& display);
+		ITexture* LoadBmpFromFile(File& file, IDisplay& display, Allocator* scratch);
 	}
 }
 
