@@ -57,6 +57,8 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 	AllocatorSizeType blockCount;
 	bool blockFree = false;
 	
+	TRACE(DEBUG_ALLOCATOR_CRITICAL, "Request to allocate %ld bytes...", request);
+	
 	// Find the first available free block in the block info array
 	while (blockIndex < GetSize())
 	{
@@ -66,6 +68,7 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 		
 		if (blockFree && blockCount * size >= request)
 		{
+			TRACE(DEBUG_ALLOCATOR, "Found block at %d index with %d bytes free", blockIndex, blockCount * size);
 			break;
 		}
 #ifdef ADVENTURE_DEBUG
@@ -75,7 +78,7 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 					blockIndex,
 					info,
 					blockFree ? "insufficient size" : "already allocated",
-					blockCount);
+					blockCount * size);
 		}
 #endif
 		
@@ -86,7 +89,7 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 	// All memory is allocated and therefore the block request cannot be fulfilled
 	if (!blockFree || blockCount * size < request)
 	{
-		TRACE(DEBUG_ALLOCATOR, "No available blocks found");
+		TRACE(DEBUG_ALLOCATOR_CRITICAL, "No available blocks found");
 		
 		return NULL;
 	}
@@ -96,7 +99,11 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 	// A block request cannot be over SizeMask in size, else the size
 	// stored in the block info would be invalid
 	if (blocksRequested > SizeMask)
+	{
+		TRACE(DEBUG_ALLOCATOR_CRITICAL, "Requested too much memory (%d bytes)", request);
+		
 		return NULL;
+	}
 	
 	// Set the memory as allocated
 	blocks[blockIndex] = (blocksRequested & SizeMask) | AllocatedFlag;
@@ -106,13 +113,15 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 	// SizeMask
 	int nextBlockIndex = blockIndex + blocksRequested;
 	
+	TRACE(DEBUG_ALLOCATOR, "Next block index: %d", nextBlockIndex);
+	
 	// As long as the next block is within bounds, set it
-	if (nextBlockIndex < count && nextBlockIndex != 0)
+	if (nextBlockIndex < GetSize() && nextBlockIndex != 0)
 	{
 		blocks[nextBlockIndex] = blockCount - blocksRequested;
 	}
 	
-	TRACE(DEBUG_ALLOCATOR, "Allocated %p (0x%lx bytes) at block index %d [0x%lx]", (char*)pool + blockIndex * size, blocksRequested * size, blockIndex, blocks[blockIndex]);
+	TRACE(DEBUG_ALLOCATOR_CRITICAL, "Allocated %p (%ld bytes) at block index %d [0x%lx]", (char*)pool + blockIndex * size, blocksRequested * size, blockIndex, blocks[blockIndex]);
 	
 	// Return the block of memory
 	return (char*)pool + blockIndex * size;

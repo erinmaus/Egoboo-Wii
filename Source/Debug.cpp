@@ -17,7 +17,9 @@
 #include <cstdlib>
 #include <cstdarg>
 
-#define DEBUG_LEVEL (DEBUG_GENERAL | DEBUG_ALLOCATOR | DEBUG_SYSTEM | DEBUG_RENDERING_LOW | DEBUG_RENDERING_HIGH | DEBUG_ASSERT | DEBUG_FILE_LOADING)
+#ifdef ADVENTURE_DEBUG
+
+#define DEBUG_LEVEL (DEBUG_GENERAL | DEBUG_ALLOCATOR | DEBUG_ALLOCATOR_CRITICAL | DEBUG_SYSTEM | DEBUG_RENDERING_LOW | DEBUG_RENDERING_HIGH | DEBUG_ASSERT | DEBUG_FILE_LOADING)
 
 void _adventure_trace(int module, const char* format, ...)
 {
@@ -46,3 +48,5 @@ void _adventure_assert(const char* statement, const char* filename, int line, bo
 		abort();
 	}
 }
+
+#endif

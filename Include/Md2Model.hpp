@@ -179,7 +179,7 @@ namespace Adventure
 			float interval;
 			float currentDelta;
 			
-			int previousFrame, currentFrame, nextFrame;
+			int currentFrame, nextFrame;
 			Animation currentAnimation;
 	};
 }

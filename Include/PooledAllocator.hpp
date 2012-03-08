@@ -62,7 +62,7 @@ namespace Adventure
 				
 				// Size indicates the amount of blocks allocated or unallocated
 				// Therefore, the resulting value is (blocks[i] & SizeMask) * size
-				SizeMask = 0x0000FFFF
+				SizeMask = 0x00FFFFFF
 			};
 			
 			typedef int BlockInfo;

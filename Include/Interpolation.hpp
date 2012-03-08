@@ -27,6 +27,12 @@ namespace Adventure
 			
 			return (p1 * inverseMu * inverseMu) + (p2 * 2.0f * inverseMu * mu) + (p3 * mu * mu);
 		}
+		
+		template<typename TType>
+		inline TType LinearInterpolate(TType from, TType to, float mu)
+		{
+			return from + (to - from) * mu;
+		}
 	}
 }
 

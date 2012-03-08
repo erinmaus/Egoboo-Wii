@@ -154,6 +154,8 @@ namespace Adventure
 				
 				allocator->Flush(elements, GetSize());
 				
+				isLocked = false;
+				
 				return true;
 			}
 			
@@ -242,7 +244,9 @@ namespace Adventure
 				: ElementArray(elementArray)
 			{
 				if (!ElementArray.Lock())
+				{
 					TRACE(DEBUG_RENDERING_LOW, "Could not lock element array");
+				}
 			}
 			
 			~ElementArrayLock()

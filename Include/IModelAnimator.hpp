@@ -65,7 +65,7 @@ namespace Adventure
 			virtual void UpdateAnimation(float delta) = 0;
 			
 			// Switches to the provided animation
-			virtual bool SwitchTo(const std::string& name);
+			virtual bool SwitchTo(const std::string& name) = 0;
 			
 			// Renders the model.
 			virtual bool Render() = 0;

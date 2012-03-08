@@ -223,7 +223,7 @@ Adventure::Md2Model* Adventure::Md2Model::LoadFromFile(File& file, Allocator* al
 {
 	struct
 	{
-		File::UInt8 Identifier[4];
+		File::Int32 Identifier;
 		File::Int32 Version;
 		File::Int32 SkinWidth;
 		File::Int32 SkinHeight;
@@ -244,14 +244,11 @@ Adventure::Md2Model* Adventure::Md2Model::LoadFromFile(File& file, Allocator* al
 	
 	TRACE(DEBUG_FILE_LOADING, "Attempting to load MD2...");
 	
-	file.Read(header.Identifier[0]);
-	file.Read(header.Identifier[1]);
-	file.Read(header.Identifier[2]);
-	file.Read(header.Identifier[3]);
+	file.Read(header.Identifier);
 	
-	if (header.Identifier[0] != 'I' && header.Identifier[1] != 'D' && header.Identifier[2] != 'P' && header.Identifier[3] != '2')
+	if (header.Identifier != 844121161)
 	{
-		TRACE(DEBUG_FILE_LOADING, "Not a valid MD2 header");
+		TRACE(DEBUG_FILE_LOADING, "Not a valid MD2 header (got %d)", header.Identifier);
 		return NULL;
 	}
 	
@@ -259,7 +256,7 @@ Adventure::Md2Model* Adventure::Md2Model::LoadFromFile(File& file, Allocator* al
 	
 	if (header.Version != 8)
 	{
-		TRACE(DEBUG_FILE_LOADING, "Incorrect version");
+		TRACE(DEBUG_FILE_LOADING, "Incorrect version (got %d)", header.Version);
 		return NULL;
 	}
 	
@@ -345,14 +342,17 @@ Adventure::Md2Model* Adventure::Md2Model::LoadFromFile(File& file, Allocator* al
 		
 		model->frames[i].Translation = Vector3(scratch.FloatValue[0], scratch.FloatValue[1], scratch.FloatValue[2]);
 		
-		char nameBuffer[64];
+		char nameBuffer[16];
 		
-		file.GetStream().read(nameBuffer, 64);
-		nameBuffer[63] = 0;
+		file.GetStream().read(nameBuffer, 16);
+		nameBuffer[15] = 0;
 		
 		model->frames[i].Name = nameBuffer;
 		
+		TRACE(DEBUG_FILE_LOADING, "Found frame %s at index %d of %d", nameBuffer, i + 1, header.FrameCount);
+		
 		model->frames[i].Vertices = new (allocator) Md2Vertex[header.PositionCount];
+		
 		for (int j = 0; j < header.PositionCount; j++)
 		{
 			file.Read(model->frames[i].Vertices[j].X);
@@ -362,7 +362,7 @@ Adventure::Md2Model* Adventure::Md2Model::LoadFromFile(File& file, Allocator* al
 		}
 	}
 	
-	TRACE(DEBUG_FILE_LOADING, "Loaded vertices");
+	TRACE(DEBUG_FILE_LOADING, "Loaded frames");
 	
 	TRACE(DEBUG_FILE_LOADING, "Model created");
 	
@@ -376,7 +376,6 @@ Adventure::Md2Animator::Md2Animator(Md2Model* model)
 	interval = 1.0f;
 	initialized = false;
 	
-	previousFrame = 0;
 	currentFrame = 0;
 	nextFrame = 0;
 	
@@ -385,14 +384,14 @@ Adventure::Md2Animator::Md2Animator(Md2Model* model)
 	int prevAnimationFrame = 0;
 	
 	// For now, just keep in line with Egoboo frame names (XX##...)
-	std::string prevAnimationName = frames[0].Name.substr(2);
+	std::string prevAnimationName = frames[0].Name.substr(0, 2);
 	
 	for (int i = 1; i < model->GetFrameCount(); i++)
 	{
-		std::string animationName = frames[i].Name.substr(2);
+		std::string animationName = frames[i].Name.substr(0, 2);
 		
 		// The animation names are different, so create a new animation
-		if (prevAnimationName != animationName)
+		if (prevAnimationName != animationName || i == model->GetFrameCount() - 1)
 		{
 			Animation animation;
 			
@@ -400,10 +399,12 @@ Adventure::Md2Animator::Md2Animator(Md2Model* model)
 			animation.StartFrame = prevAnimationFrame;
 			animation.EndFrame = i - 1;
 			
-			animations[animationName] = animation;
+			animations[prevAnimationName] = animation;
 			
 			prevAnimationName = animationName;
 			prevAnimationFrame = i;
+			
+			TRACE(DEBUG_RENDERING_LOW, "Animation %s created (%d frames)", animation.Name.c_str(), animation.EndFrame - animation.StartFrame + 1);
 		}
 	}
 }
@@ -482,6 +483,25 @@ bool Adventure::Md2Animator::Initialize(Allocator* allocator)
 		}
 	}
 	
+	// Buffer texture coordinates (with a scoped lock)
+	{
+		ElementArrayLock<CompressedVector2Array> texCoords(frame.TexCoords);
+		
+		if (!texCoords)
+		{
+			TRACE(DEBUG_RENDERING_LOW, "Could not lock texture coordinates");
+			
+			return false;
+		}
+		
+		const Md2TexCoord* t = model->GetTexCoords();
+		Vector2 inv = model->GetInverseTexCoordScale();
+		for (int i = 0; i < model->GetTexCoordCount(); i++)
+		{
+			texCoords.ElementArray.Buffer(t[i].U * inv.X, 1.0f - t[i].V * inv.Y);
+		}
+	}
+	
 	return true;
 }
 
@@ -513,13 +533,14 @@ void Adventure::Md2Animator::UpdateAnimation(float delta)
 	
 	if (currentDelta > interval)
 	{
-		previousFrame = currentFrame;
 		currentFrame = nextFrame;
 		
 		nextFrame++;
 		
 		if (nextFrame > currentAnimation.EndFrame)
 			nextFrame = currentAnimation.StartFrame;
+		
+		currentDelta = 0.0f;
 	}
 }
 
@@ -530,6 +551,9 @@ bool Adventure::Md2Animator::SwitchTo(const std::string& name)
 	if (GetAnimation(name, newAnimation))
 	{
 		currentAnimation = newAnimation;
+		nextFrame = newAnimation.StartFrame;
+		
+		TRACE(DEBUG_RENDERING_LOW, "Switched to animation %s", newAnimation.Name.c_str());
 		
 		return true;
 	}
@@ -540,7 +564,6 @@ bool Adventure::Md2Animator::SwitchTo(const std::string& name)
 bool Adventure::Md2Animator::Render()
 {
 	// Get the previous and current frames
-	const Md2Frame* prevFrame = &model->GetFrames()[this->previousFrame];
 	const Md2Frame* curFrame = &model->GetFrames()[this->currentFrame];
 	const Md2Frame* nextFrame = &model->GetFrames()[this->nextFrame];
 	
@@ -550,23 +573,20 @@ bool Adventure::Md2Animator::Render()
 	// Render the model
 	for (int i = 0; i < model->GetPositionCount(); i++)
 	{
-		Md2Vertex prevVertex = prevFrame->Vertices[i];
 		Md2Vertex curVertex = curFrame->Vertices[i];
 		Md2Vertex nextVertex = nextFrame->Vertices[i];
 		
 		// Scale and translate positions
-		Vector3 prevPosition = prevFrame->Scale * Vector3(prevVertex.X, prevVertex.Y, prevVertex.Z) + prevFrame->Translation;
 		Vector3 curPosition = curFrame->Scale * Vector3(curVertex.X, curVertex.Y, curVertex.Z) + curFrame->Translation;
 		Vector3 nextPosition = nextFrame->Scale * Vector3(nextVertex.X, nextVertex.Y, nextVertex.Z) + nextFrame->Translation;
 		
 		// Get normals from Md2Normals table
-		Md2Normal prevNormal = Md2Normals[prevFrame->Vertices[i].Normal];
 		Md2Normal curNormal = Md2Normals[curFrame->Vertices[i].Normal];
 		Md2Normal nextNormal = Md2Normals[nextFrame->Vertices[i].Normal];
 		
 		// Interpolate and set
-		vertexCache[i].Position = Math::QuadraticInterpolate(prevPosition, curPosition, nextPosition, mu);
-		vertexCache[i].Normal = Math::QuadraticInterpolate(Vector3(prevNormal.X, prevNormal.Y, prevNormal.Z), Vector3(curNormal.X, curNormal.Y, curNormal.Z), Vector3(nextNormal.X, nextNormal.Y, nextNormal.Z), mu);
+		vertexCache[i].Position = Math::LinearInterpolate(curPosition, nextPosition, mu);
+		vertexCache[i].Normal = Math::LinearInterpolate(Vector3(curNormal.X, curNormal.Y, curNormal.Z), Vector3(nextNormal.X, nextNormal.Y, nextNormal.Z), mu);
 	}
 	
 	return true;

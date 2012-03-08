@@ -17,7 +17,7 @@
 
 #include "WiiSystem.hpp"
 
-const std::string Adventure::WiiSystem::DefaultApplicationPath = "sd:/adventure/";
+const std::string Adventure::WiiSystem::DefaultApplicationPath = "sd:";
 
 Adventure::WiiSystem::WiiSystem()
 {
@@ -54,13 +54,22 @@ bool Adventure::WiiSystem::SetArguments(int count, const char** arguments)
 {
 	applicationArguments.clear();
 	
-	for (int i = 0; i < count; i++)
-		applicationArguments.push_back(arguments[i]);
+	if (count > 0)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			applicationArguments.push_back(arguments[i]);
+			
+			TRACE(DEBUG_SYSTEM, "Argument %d: %s", i, arguments[i]);
+		}
+		
+		// Set the application path from applicationArguments[0]
+		std::string path = applicationArguments[0].substr(0, applicationArguments[0].find_last_of("/"));
+		
+		return SetApplicationPath(path);
+	}
 	
-	// Set the application path from applicationArguments[0]
-	std::string path = applicationArguments[0].substr(0, applicationArguments[0].find_last_of("/"));
-	
-	return SetApplicationPath(path);
+	return false;
 }
 
 std::string Adventure::WiiSystem::BuildPath(const std::string& path) const

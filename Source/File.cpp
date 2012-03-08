@@ -33,7 +33,7 @@ Adventure::File::UInt32 Adventure::File::Swap(UInt32 value)
 
 Adventure::File::Int32 Adventure::File::Swap(Int32 value)
 {
-	return (value >> 24) | ((value << 8) & 0x00FF0000) | ((value >> 8) & 0x0000FF00) | (value << 24);
+	return (Int32)Swap((UInt32)value);
 }
 
 Adventure::File::UInt16 Adventure::File::Swap(UInt16 value)
@@ -43,7 +43,7 @@ Adventure::File::UInt16 Adventure::File::Swap(UInt16 value)
 
 Adventure::File::Int16 Adventure::File::Swap(Int16 value)
 {
-	return (value >> 8) | (value << 8);
+	return (Int16)Swap((UInt16)value);
 }
 
 bool Adventure::File::Read(UInt32& value)
