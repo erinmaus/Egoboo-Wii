@@ -33,6 +33,8 @@ Adventure::WiiDisplay::WiiDisplay()
 	
 	graphicsFifo = 0;
 	
+	textureAllocator = NULL;
+	
 	initialized = false;
 }
 
@@ -92,7 +94,7 @@ bool Adventure::WiiDisplay::Initialize()
 	GX_Init(graphicsFifo, DefaultGraphicsFifoSize);
 	
 	// Routine GX initialization
-	GXColor backgroundColor = { 0x00, 0, 0, 0xFF };
+	GXColor backgroundColor = { 0x00, 0x00, 0x00, 0xFF };
 	GX_SetCopyClear(backgroundColor, 0x00FFFFFF);
 	
 	float yScale = GX_GetYScaleFactor(renderMode->efbHeight, renderMode->xfbHeight);
@@ -152,23 +154,8 @@ void Adventure::WiiDisplay::Begin()
 	else
 		GX_SetViewport(0.0f, 0.0f, renderMode->fbWidth, renderMode->efbHeight, 0.0f, 1.0f);
 		
-	// Prepare the TEV
-	GX_SetNumTexGens(1);
-	GX_SetNumChans(1);
-	GX_SetNumTevStages(1);
-	
-	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-	GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
-}
-
-Adventure::ITexture* Adventure::WiiDisplay::CreateTexture()
-{
-	return new(textureAllocator) WiiTexture(*this, textureAllocator);
-}
-
-void Adventure::WiiDisplay::DestroyTexture(ITexture* texture)
-{
-	Deallocate(texture, textureAllocator);
+	// Set default lighting
+	SetLightingMode(Ambient);
 }
 
 void Adventure::WiiDisplay::End()
@@ -187,6 +174,46 @@ void Adventure::WiiDisplay::End()
 	VIDEO_WaitVSync();
 }
 
+void Adventure::WiiDisplay::SetLightingMode(LightingMode mode)
+{
+	switch(mode)
+	{
+		case Specular:
+			SetBlendingMode(Additive);
+			
+			GX_SetNumTexGens(1);
+			GX_SetNumChans(1);
+			GX_SetNumTevStages(1);
+			
+			GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+			GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+			break;
+		
+		case Diffuse:
+		case Ambient:
+		default:
+			SetBlendingMode(Alpha);
+			
+			GX_SetNumTexGens(1);
+			GX_SetNumChans(1);
+			GX_SetNumTevStages(1);
+			
+			GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+			GX_SetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+			break;
+	}
+}
+
+Adventure::ITexture* Adventure::WiiDisplay::CreateTexture()
+{
+	return new(textureAllocator) WiiTexture(*this, textureAllocator);
+}
+
+void Adventure::WiiDisplay::DestroyTexture(ITexture* texture)
+{
+	Deallocate(texture, textureAllocator);
+}
+
 void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals, const void* materials, const void* uvs, const ModelIndexArray& indexArray, bool compressed)
 {
 	GX_ClearVtxDesc();
@@ -200,8 +227,6 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 	GX_SetArray(GX_VA_NRM, (void*)normals, compressed ? CompressedNormalArray::ElementStride : NormalArray::ElementStride);
 	GX_SetArray(GX_VA_CLR0, (void*)materials, ColorArray::ElementStride);
 	GX_SetArray(GX_VA_TEX0, (void*)uvs, compressed ? CompressedVector2Array::ElementStride : Vector2Array::ElementStride);
-	
-	GX_InvVtxCache();
 	
 	GX_SetZMode(GX_ENABLE, GX_LEQUAL, GX_TRUE);
 	GX_SetCullMode(GX_CULL_BACK);
@@ -219,6 +244,8 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 	}
 	
 	GX_End();
+	
+	GX_Flush();
 }
 
 void Adventure::WiiDisplay::SetProjectionMatrix(const Matrix& matrix, ProjectionHint hint)
@@ -253,4 +280,18 @@ void Adventure::WiiDisplay::SetModelViewMatrix(const Matrix& matrix)
 	
 	GX_SetCurrentMtx(GX_PNMTX0);
 	GX_LoadPosMtxImm(modelViewMatrix, GX_PNMTX0);
+}
+
+void Adventure::WiiDisplay::SetBlendingMode(BlendingMode mode)
+{
+	switch(mode)
+	{
+		case Additive:
+			GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, 0);
+			break;
+		case Alpha:
+		default:
+			GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, 0);
+			break;
+	}
 }

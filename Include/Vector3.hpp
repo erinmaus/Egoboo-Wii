@@ -58,6 +58,7 @@ namespace Adventure
 			
 			// Transformation
 			static Vector3 Transform(const Vector3& vector, const Matrix& matrix);
+			static Vector3 TransformNormal(const Vector3& vector, const Matrix& matrix);
 		
 			// Components of the vector
 			float X;

@@ -154,6 +154,7 @@ namespace Adventure
 			~Md2Animator();
 			
 			bool Initialize(Allocator* allocator);
+			bool InitializeFrame(ModelFrame& frame, Allocator* allocator);
 			
 			bool GetAnimation(const std::string& name, Animation& animation) const;
 			
@@ -163,18 +164,17 @@ namespace Adventure
 			bool SwitchTo(const std::string& name);
 			
 			bool Render();
-			ModelFrame* GetCurrentFrame();
+			bool BuildCurrentFrame(ModelFrame& frame, IEffect& effect);
 			
 			Matrix GetGrip(const std::string& name) const;
 		
 		private:
 			std::map<std::string, Animation> animations;
-			bool initialized;
-			Allocator* allocator;
 			Md2Model* model;
 			
+			bool initialized;
+			Allocator* allocator;
 			Md2CacheVertex* vertexCache;
-			ModelFrame frame;
 			
 			float interval;
 			float currentDelta;

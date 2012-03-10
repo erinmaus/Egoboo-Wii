@@ -26,10 +26,10 @@
 
 // Converts a Rgba8 texture to the native Wii format
 // Note: Refer to YAGCD for specifics on why this code is so ugly
-void * ConvertRgba8(const void * data, int width, int height)
+void * ConvertRgba8(const void * data, int width, int height, Adventure::Allocator* allocator)
 {
-	const unsigned char * input = (const unsigned char *)data;
-	unsigned char * output = (unsigned char *)memalign(32, width * height * 4);
+	const unsigned char* input = (const unsigned char*)data;
+	unsigned char* output = (unsigned char*)allocator->Allocate(width * height * 4);
 	
 	if (output == NULL)
 		return NULL;
@@ -65,13 +65,13 @@ void * ConvertRgba8(const void * data, int width, int height)
 		}
 	}
 	
-	DCFlushRange(output, width * height * 4);
+	allocator->Flush(output, width * height * 4);
 	
 	return output;
 }
 
 Adventure::WiiTexture::WiiTexture(WiiDisplay& display, Allocator* allocator)
-	: display(display)
+	: display(display), allocator(allocator)
 {
 	textureData = NULL;
 	
@@ -84,10 +84,10 @@ Adventure::WiiTexture::WiiTexture(WiiDisplay& display, Allocator* allocator)
 Adventure::WiiTexture::~WiiTexture()
 {
 	if (textureData != NULL)
-		free(textureData);
+		allocator->Deallocate(textureData);
 }
 
-bool Adventure::WiiTexture::SetData(const void * data, int width, int height, Format format, Quality quality)
+bool Adventure::WiiTexture::SetData(const void* data, int width, int height, Format format, Quality quality)
 {
 	unsigned char dataFormat, textureFilter;
 	
@@ -99,8 +99,9 @@ bool Adventure::WiiTexture::SetData(const void * data, int width, int height, Fo
 	{
 		case Rgba8:
 		default:
+			TRACE(DEBUG_RENDERING_LOW, "Converting to tiled 8-bit RGBA with allocator %p", allocator);
 			dataFormat = GX_TF_RGBA8;
-			textureData = ConvertRgba8(data, width, height);
+			textureData = ConvertRgba8(data, width, height, allocator);
 			
 			if (textureData == NULL)
 				return false;

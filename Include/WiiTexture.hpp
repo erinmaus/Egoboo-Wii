@@ -44,7 +44,7 @@ namespace Adventure
 			Allocator* allocator;
 			
 			GXTexObj textureObject;
-			void * textureData;
+			void* textureData;
 			
 			int width, height;
 			Format format;

@@ -18,10 +18,13 @@
 
 #include <string>
 
+#include "IDisplay.hpp"
 #include "ElementArray.hpp"
 
 namespace Adventure
 {
+	class IEffect;
+	
 	struct Animation
 	{
 		// The name of the animation
@@ -43,6 +46,12 @@ namespace Adventure
 		
 		// Indices of the frame
 		ModelIndexArray Indices;
+		
+		// Helper method to render using the provided display
+		inline void Draw(IDisplay& display)
+		{
+			display.DrawModel(Positions.GetElements(), Normals.GetElements(), Colors.GetElements(), TexCoords.GetElements(), Indices, true);
+		}
 	};
 	
 	class IModelAnimator
@@ -50,8 +59,11 @@ namespace Adventure
 		public:
 			virtual ~IModelAnimator() { }
 			
-			// Initializes the model animator
+			// Initializes the model animator using the provided allocator
 			virtual bool Initialize(Allocator* allocator) = 0;
+			
+			// Initializes a model frame
+			virtual bool InitializeFrame(ModelFrame& frame, Allocator* allocator) = 0;
 			
 			// Gets an animation with the provided name
 			// If the animation does not exist, the method returns an empty animation
@@ -67,12 +79,11 @@ namespace Adventure
 			// Switches to the provided animation
 			virtual bool SwitchTo(const std::string& name) = 0;
 			
-			// Renders the model.
+			// Renders the model to a cache
 			virtual bool Render() = 0;
 			
 			// Gets the current frame
-			// TODO: Apply effect (e.g., lighting or enchantment) during this stage
-			virtual ModelFrame* GetCurrentFrame() = 0;
+			virtual bool BuildCurrentFrame(ModelFrame& frame, IEffect& effect) = 0;
 			
 			// Gets a grip transformation in model space
 			//virtual Matrix GetGrip(const std::string& grip) const = 0;

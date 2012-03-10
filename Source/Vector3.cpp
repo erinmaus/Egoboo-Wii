@@ -156,6 +156,16 @@ Adventure::Vector3 Adventure::Vector3::Transform(const Vector3& vector, const Ma
 	);
 }
 
+Adventure::Vector3 Adventure::Vector3::TransformNormal(const Vector3& vector, const Matrix& matrix)
+{
+	return Vector3
+	(
+		vector.X * matrix.Get(0, 0) + vector.Y * matrix.Get(0, 1) + vector.Z * matrix.Get(0, 2),
+		vector.X * matrix.Get(1, 0) + vector.Y * matrix.Get(1, 1) + vector.Z * matrix.Get(1, 2),
+		vector.X * matrix.Get(2, 0) + vector.Y * matrix.Get(2, 1) + vector.Z * matrix.Get(2, 2)
+	);
+}
+
 Adventure::Vector3 Adventure::operator +(const Vector3& left, const Vector3& right)
 {
 	return Vector3(left) += right;
@@ -184,4 +194,14 @@ Adventure::Vector3 Adventure::operator *(const Vector3& left, const Vector3& rig
 Adventure::Vector3 Adventure::operator *(const Vector3& left, float right)
 {
 	return Vector3(left) *= right;
+}
+
+Adventure::Vector3 Adventure::operator /(const Vector3& left, const Vector3& right)
+{
+	return Vector3(left) /= right;
+}
+
+Adventure::Vector3 Adventure::operator /(const Vector3& left, float right)
+{
+	return Vector3(left) /= right;
 }

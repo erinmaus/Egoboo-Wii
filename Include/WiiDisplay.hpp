@@ -47,11 +47,17 @@ namespace Adventure
 			ITexture* CreateTexture();
 			void DestroyTexture(ITexture* texture);
 			
+			// Lighting
+			void SetLightingMode(LightingMode mode);
+			
 			// Drawing routines
 			void DrawModel(const void* positions, const void* normals, const void* materials, const void* uvs, const ModelIndexArray& indexArray, bool compressed);
 			
 			void SetProjectionMatrix(const Matrix& matrix, ProjectionHint hint);
 			void SetModelViewMatrix(const Matrix& matrix);
+			
+			// Blending
+			void SetBlendingMode(BlendingMode mode);
 			
 			static const int DefaultGraphicsFifoSize = 65536;
 			
@@ -72,11 +78,11 @@ namespace Adventure
 			};
 			
 		private:
-			WiiDisplay(const WiiDisplay& other) { }
+			WiiDisplay(const WiiDisplay& other);
 			
-			GXRModeObj * renderMode;
-			void * framebuffers[2];
-			void * graphicsFifo;
+			GXRModeObj* renderMode;
+			void* framebuffers[2];
+			void* graphicsFifo;
 			
 			int framebufferIndex;
 			

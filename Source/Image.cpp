@@ -191,6 +191,8 @@ Adventure::ITexture* Adventure::Image::LoadBmpFromFile(File& file, IDisplay& dis
 	
 	if (texture == NULL)
 	{
+		TRACE(DEBUG_FILE_LOADING, "Could not create texture");
+		
 		Deallocate(pixels, scratch);
 		return NULL;
 	}

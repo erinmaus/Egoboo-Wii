@@ -19,22 +19,25 @@
 
 #ifdef ADVENTURE_DEBUG
 
-#define DEBUG_LEVEL (DEBUG_GENERAL | DEBUG_ALLOCATOR | DEBUG_ALLOCATOR_CRITICAL | DEBUG_SYSTEM | DEBUG_RENDERING_LOW | DEBUG_RENDERING_HIGH | DEBUG_ASSERT | DEBUG_FILE_LOADING)
+#define DEBUG_LEVEL (DEBUG_GENERAL | /*DEBUG_ALLOCATOR | */DEBUG_ALLOCATOR_CRITICAL | DEBUG_SYSTEM | DEBUG_RENDERING_LOW | DEBUG_RENDERING_HIGH | DEBUG_ASSERT | DEBUG_FILE_LOADING)
 
 void _adventure_trace(int module, const char* format, ...)
 {
 	FILE * log = fopen(ADVENTURE_DEBUG_OUTPUT, "a");
 	
-	if (log && DEBUG_LEVEL & module)
+	if (log)
 	{
-		va_list arguments;
-		va_start(arguments, format);
-		
-		vfprintf(log, format, arguments);
-		fprintf(log, "\n");
-		fflush(log);
-		
-		va_end(arguments);
+		if (DEBUG_LEVEL & module)
+		{
+			va_list arguments;
+			va_start(arguments, format);
+			
+			vfprintf(log, format, arguments);
+			fprintf(log, "\n");
+			fflush(log);
+			
+			va_end(arguments);
+		}
 		
 		fclose(log);
 	}

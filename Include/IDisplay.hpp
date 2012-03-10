@@ -82,6 +82,20 @@ namespace Adventure
 			// Destroys a texture object
 			virtual void DestroyTexture(ITexture* texture) = 0;
 			
+			enum LightingMode
+			{
+				Specular,
+				Diffuse,
+				Ambient
+			};
+			
+			// Sets a lighting mode
+			// This helpful method will set the correct texture and blending operations
+			// The default is diffuse, which enables textures and uses alpha blending
+			// Ambient is the same, as well
+			// On the other hand, specular disables textures and perform additive blending
+			virtual void SetLightingMode(LightingMode mode) = 0;
+			
 			// An enumeration that provides the value type of an index
 			enum IndexSize
 			{
@@ -107,6 +121,15 @@ namespace Adventure
 			
 			// Sets the model view matrix
 			virtual void SetModelViewMatrix(const Matrix& matrix) = 0;
+			
+			enum BlendingMode
+			{
+				Additive,
+				Alpha
+			};
+			
+			// Sets the blend mode
+			virtual void SetBlendingMode(BlendingMode mode) = 0;
 	};
 }
 
