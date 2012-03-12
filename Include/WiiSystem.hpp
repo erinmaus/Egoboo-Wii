@@ -16,14 +16,15 @@
 #ifndef ADVENTURE_SYSTEM_WII_HPP_
 #define ADVENTURE_SYSTEM_WII_HPP_
 
-#include <string>
-#include <vector>
+#include "Standard.hpp"
 
 #include "ISystem.hpp"
 #include "WiiDisplay.hpp"
 
 namespace Adventure
 {
+	class Allocator;
+	
 	class WiiSystem : public ISystem
 	{
 		public:
@@ -33,22 +34,23 @@ namespace Adventure
 			IDisplay& GetDisplay();
 			const IDisplay& GetDisplay() const;
 			
-			bool SetApplicationPath(const std::string& path);
-			const std::string& GetApplicationPath() const;
+			bool SetApplicationPath(const String& path);
+			const String& GetApplicationPath() const;
 			
-			std::string BuildPath(const std::string& path) const;
+			String BuildPath(const String& path) const;
 			
 			bool SetArguments(int count, const char** arguments);
 			
 			bool Initialize();
 			
-			static const std::string DefaultApplicationPath;
+			static const char* DefaultApplicationPath;
 		
 		private:
-			std::string applicationPath;
-			std::vector<std::string> applicationArguments;
+			String applicationPath;
+			Vector<String>::Type applicationArguments;
 			
 			WiiDisplay display;
+			Allocator* allocator;
 	};
 }
 

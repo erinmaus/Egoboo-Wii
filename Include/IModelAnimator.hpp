@@ -16,7 +16,7 @@
 #ifndef ADVENTURE_MODEL_ANIMATOR_INTERFACE_HPP_
 #define ADVENTURE_MODEL_ANIMATOR_INTERFACE_HPP_
 
-#include <string>
+#include "Standard.hpp"
 
 #include "IDisplay.hpp"
 #include "ElementArray.hpp"
@@ -28,7 +28,7 @@ namespace Adventure
 	struct Animation
 	{
 		// The name of the animation
-		std::string Name;
+		String Name;
 		
 		// The loop points of an animation
 		int StartFrame;
@@ -67,7 +67,7 @@ namespace Adventure
 			
 			// Gets an animation with the provided name
 			// If the animation does not exist, the method returns an empty animation
-			virtual bool GetAnimation(const std::string& name, Animation& animation) const = 0;
+			virtual bool GetAnimation(const String& name, Animation& animation) const = 0;
 			
 			// Sets the interval of the animation
 			virtual void SetInterval(float interval) = 0;
@@ -77,7 +77,7 @@ namespace Adventure
 			virtual void UpdateAnimation(float delta) = 0;
 			
 			// Switches to the provided animation
-			virtual bool SwitchTo(const std::string& name) = 0;
+			virtual bool SwitchTo(const String& name) = 0;
 			
 			// Renders the model to a cache
 			virtual bool Render() = 0;
@@ -86,7 +86,7 @@ namespace Adventure
 			virtual bool BuildCurrentFrame(ModelFrame& frame, IEffect& effect) = 0;
 			
 			// Gets a grip transformation in model space
-			//virtual Matrix GetGrip(const std::string& grip) const = 0;
+			//virtual Matrix GetGrip(const String& grip) const = 0;
 	};
 }
 

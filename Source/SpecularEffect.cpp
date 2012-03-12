@@ -21,10 +21,12 @@ Adventure::Color Adventure::SpecularEffect::Apply(const Vector3& vertexPosition,
 	Vector3 p = Vector3::Transform(vertexPosition, GetWorld());
 	Vector3 n = Vector3::TransformNormal(vertexNormal, GetWorld());
 	Vector3 v = Vector3::Normalize(p - GetCameraPosition());
-	Vector3 l = Vector3::Normalize(GetPosition() - p);
+	Vector3 u = GetPosition() - p;
+	float ul = u.CalculateLength();
+	Vector3 l = u / ul;
 	Vector3 h = Vector3::Normalize(v + l);
 	float d = Vector3::Dot(h, n);
-	float a = GetAttenuation().Calculate((GetPosition() - p).CalculateLength());
+	float a = GetAttenuation().Calculate(ul);
 	
 	if (d < 0.0f)
 		d = 0.0f;

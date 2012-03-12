@@ -101,7 +101,7 @@ Adventure::Matrix Adventure::Matrix::Translate(const Vector3& translation)
 	(
 		1.0f, 0.0f, 0.0f, translation.X,
 		0.0f, 1.0f, 0.0f, translation.Y,
-		0.0f, 0.0f, 0.0f, translation.Z,
+		0.0f, 0.0f, 1.0f, translation.Z,
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
 }

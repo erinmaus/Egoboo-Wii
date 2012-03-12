@@ -16,6 +16,8 @@
 #include <cmath>
 #include <fstream>
 
+#include "Standard.hpp"
+
 #include "DiffuseEffect.hpp"
 #include "SpecularEffect.hpp"
 #include "ElementArray.hpp"
@@ -76,11 +78,15 @@ bool LoadCharacter(Character& character, Adventure::ISystem& system, Adventure::
 
 int main(int argumentCount, char** arguments)
 {
-	Adventure::WiiSystem system;
 	Adventure::WiiAllocator baseAllocator;
 	Adventure::PooledAllocator texturePool(&baseAllocator, 32, 0x40000);
 	Adventure::PooledAllocator elementPool(&baseAllocator, 32, 0x40000);
 	Adventure::PooledAllocator scratchPool(&baseAllocator, 32, 0x40000);
+	Adventure::PooledAllocator standardPool(&baseAllocator, 32, 0xffff);
+	
+	Adventure::StdAllocatorBase::SetBase(&standardPool);
+	
+	Adventure::WiiSystem system;
 	
 	system.SetArguments(argumentCount, (const char**)arguments);
 	
@@ -132,57 +138,74 @@ int main(int argumentCount, char** arguments)
 	
 	Adventure::GraphicsMode mode = display.GetGraphicsMode();
 	Adventure::Matrix projection = Adventure::Matrix::Perspective(M_PI * 0.25f, (float)mode.Width / (float)mode.Height, 1.0f, 1000.0f);
-	Adventure::Matrix camera = Adventure::Matrix::LookAt(Adventure::Vector3(0.0f, 8.0f, -64.0f), Adventure::Vector3(0.0f, 8.0f, 0.0f), Adventure::Vector3(0.0f, 1.0f, 0.0f));
 	float rotation = 0.0f;
+	int frames = 720;
 	
-	while (true)
+	PROFILE_BEGIN(1);
+	
+	while(frames--)
 	{
 		rotation += 0.005f;
 		
 		// Calculate camera
-		Adventure::Vector3 eye = Adventure::Vector3(cos(rotation * M_PI * 2) * 64.0f, 8.0f, sin(rotation * M_PI * 2) * 64.0f);
-		Adventure::Vector3 target = Adventure::Vector3(0.0f, 8.0f, 0.0f);
+		Adventure::Vector3 eye = Adventure::Vector3(cos(rotation * M_PI * 2) * 128.0f, 16.0f, sin(rotation * M_PI * 2) * 128.0f);
+		Adventure::Vector3 target = Adventure::Vector3(0.0f, 0.0f, 0.0f);
 		Adventure::Matrix view = Adventure::Matrix::LookAt(eye, target, Adventure::Vector3(0.0f, 1.0f, 0.0f));
 		Adventure::Matrix x = Adventure::Matrix::Rotate(Adventure::Vector3(1.0f, 0.0f, 0.0f), M_PI * 0.5f);
 		Adventure::Matrix y = Adventure::Matrix::Rotate(Adventure::Vector3(0.0f, 1.0f, 0.0f), M_PI * 1.5f);
-		Adventure::Matrix world = y * x;
+		Adventure::Matrix modelRotation = y * x;
 		
 		character.Animator->UpdateAnimation(1.0f / 60.0f);
 		character.Animator->Render();
 		
-		// Create diffuse light
-		Adventure::DiffuseEffect diffuseLight;
-		diffuseLight.SetWorld(world);
-		diffuseLight.SetCameraPosition(eye - target);
-		diffuseLight.SetPosition(Adventure::Vector3(0.0f, 8.0f, -16.0f));
-		diffuseLight.SetColor(Adventure::Color(1.0f, 1.0f, 1.0f));
-		diffuseLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(256.0f));
-		
-		// Create specular light
-		Adventure::SpecularEffect specularLight;
-		specularLight.SetWorld(world);
-		specularLight.SetCameraPosition(eye - target);
-		specularLight.SetPosition(Adventure::Vector3(0.0f, 16.0f, -24.0f));
-		specularLight.SetColor(Adventure::Color(1.0f, 1.0f, 1.0f));
-		specularLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(128.0f));
-		specularLight.SetPower(0.0f);
-		
 		display.Begin();
-		
-		display.SetProjectionMatrix(projection);
-		display.SetModelViewMatrix(view * world);
-		character.Texture->Bind();
-		
-		display.SetLightingMode(Adventure::IDisplay::Diffuse);
-		character.Animator->BuildCurrentFrame(diffuseFrame, diffuseLight);
-		diffuseFrame.Draw(display);
-		
-		display.SetLightingMode(Adventure::IDisplay::Specular);
-		character.Animator->BuildCurrentFrame(specularFrame, specularLight);
-		//specularFrame.Draw(display);
+		for (int i = -4; i < 4; i++)
+		{
+			for (int j = -4; j < 4; j++)
+			{
+				Adventure::Matrix world = Adventure::Matrix::Translate(Adventure::Vector3(i * 32, 0.0f, j * 32)) * modelRotation;
 				
+				// Create diffuse light
+				Adventure::DiffuseEffect diffuseLight;
+				diffuseLight.SetWorld(world);
+				diffuseLight.SetCameraPosition(eye - target);
+				diffuseLight.SetPosition(Adventure::Vector3(0.0f, 8.0f, -16.0f));
+				diffuseLight.SetColor(Adventure::Color(1.0f, 1.0f, 1.0f));
+				diffuseLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(256.0f));
+				
+				// Create specular light
+				Adventure::SpecularEffect specularLight;
+				specularLight.SetWorld(world);
+				specularLight.SetCameraPosition(eye - target);
+				specularLight.SetPosition(Adventure::Vector3(0.0f, 16.0f, -24.0f));
+				specularLight.SetColor(Adventure::Color(1.0f, 1.0f, 1.0f));
+				specularLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(128.0f));
+				specularLight.SetPower(0.0f);
+				
+				display.SetProjectionMatrix(projection);
+				display.SetModelViewMatrix(view * world);
+				character.Texture->Bind();
+				
+				display.SetLightingMode(Adventure::IDisplay::Diffuse);
+				character.Animator->BuildCurrentFrame(diffuseFrame, diffuseLight);
+				diffuseFrame.Draw(display);
+				
+				display.SetLightingMode(Adventure::IDisplay::Specular);
+				character.Animator->BuildCurrentFrame(specularFrame, specularLight);
+				specularFrame.Draw(display);
+			}
+		}
 		display.End();
 	}
+	
+	PROFILE_END(1);
+	
+	profile_int_t elapsed;
+	PROFILE_GET_DIFFERENCE(1, elapsed);
+	
+	FILE* output = fopen("sd:/Profile.txt", "a");
+	fprintf(output, "Profile run = %llu milliseconds\n", elapsed);
+	fclose(output);
 	
 	return 0;
 }

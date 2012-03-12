@@ -16,13 +16,12 @@
 #ifndef ADVENTURE_MD2_MODEL_HPP_
 #define ADVENTURE_MD2_MODEL_HPP_
 
+#include "Standard.hpp"
+
 #include "IModel.hpp"
 #include "IModelAnimator.hpp"
 #include "Vector2.hpp"
 #include "Vector3.hpp"
-
-#include <map>
-#include <string>
 
 namespace Adventure
 {
@@ -52,7 +51,7 @@ namespace Adventure
 	{
 		Vector3 Scale;
 		Vector3 Translation;
-		std::string Name;
+		String Name;
 		
 		Md2Vertex* Vertices;
 	};
@@ -156,20 +155,22 @@ namespace Adventure
 			bool Initialize(Allocator* allocator);
 			bool InitializeFrame(ModelFrame& frame, Allocator* allocator);
 			
-			bool GetAnimation(const std::string& name, Animation& animation) const;
+			bool GetAnimation(const String& name, Animation& animation) const;
 			
 			void SetInterval(float newInterval);
 			void UpdateAnimation(float delta);
 			
-			bool SwitchTo(const std::string& name);
+			bool SwitchTo(const String& name);
 			
 			bool Render();
 			bool BuildCurrentFrame(ModelFrame& frame, IEffect& effect);
 			
-			Matrix GetGrip(const std::string& name) const;
+			Matrix GetGrip(const String& name) const;
 		
 		private:
-			std::map<std::string, Animation> animations;
+			typedef Map<String, Animation>::Type AnimationMap;
+			
+			AnimationMap animations;
 			Md2Model* model;
 			
 			bool initialized;

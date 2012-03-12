@@ -17,7 +17,7 @@
 
 #include "WiiSystem.hpp"
 
-const std::string Adventure::WiiSystem::DefaultApplicationPath = "sd:";
+const char* Adventure::WiiSystem::DefaultApplicationPath = "sd:";
 
 Adventure::WiiSystem::WiiSystem()
 {
@@ -38,14 +38,14 @@ const Adventure::IDisplay& Adventure::WiiSystem::GetDisplay() const
 	return display;
 }
 
-bool Adventure::WiiSystem::SetApplicationPath(const std::string& path)
+bool Adventure::WiiSystem::SetApplicationPath(const String& path)
 {
 	applicationPath = path;
 	
 	return true;
 }
 
-const std::string& Adventure::WiiSystem::GetApplicationPath() const
+const Adventure::String& Adventure::WiiSystem::GetApplicationPath() const
 {
 	return applicationPath;
 }
@@ -64,7 +64,7 @@ bool Adventure::WiiSystem::SetArguments(int count, const char** arguments)
 		}
 		
 		// Set the application path from applicationArguments[0]
-		std::string path = applicationArguments[0].substr(0, applicationArguments[0].find_last_of("/"));
+		String path = applicationArguments[0].substr(0, applicationArguments[0].find_last_of("/"));
 		
 		return SetApplicationPath(path);
 	}
@@ -72,7 +72,7 @@ bool Adventure::WiiSystem::SetArguments(int count, const char** arguments)
 	return false;
 }
 
-std::string Adventure::WiiSystem::BuildPath(const std::string& path) const
+Adventure::String Adventure::WiiSystem::BuildPath(const String& path) const
 {
 	return applicationPath + path;
 }
@@ -87,11 +87,11 @@ bool Adventure::WiiSystem::Initialize()
 		remove(ADVENTURE_DEBUG_OUTPUT);
 	}
 #endif
-	TRACE(DEBUG_SYSTEM, "Initialized FAT.");
+	TRACE(DEBUG_SYSTEM, "Initialized filesystem");
 	
 	if (!display.Initialize())
 		return false;
-	TRACE(DEBUG_SYSTEM, "Initialized display.");
+	TRACE(DEBUG_SYSTEM, "Initialized display");
 	
 	return true;
 }

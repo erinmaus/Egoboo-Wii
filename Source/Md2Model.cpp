@@ -385,11 +385,11 @@ Adventure::Md2Animator::Md2Animator(Md2Model* model)
 	int prevAnimationFrame = 0;
 	
 	// For now, just keep in line with Egoboo frame names (XX##...)
-	std::string prevAnimationName = frames[0].Name.substr(0, 2);
+	String prevAnimationName = frames[0].Name.substr(0, 2);
 	
 	for (int i = 1; i < model->GetFrameCount(); i++)
 	{
-		std::string animationName = frames[i].Name.substr(0, 2);
+		String animationName = frames[i].Name.substr(0, 2);
 		
 		// The animation names are different, so create a new animation
 		if (prevAnimationName != animationName || i == model->GetFrameCount() - 1)
@@ -511,9 +511,9 @@ bool Adventure::Md2Animator::Initialize(Allocator* allocator)
 	return true;
 }
 
-bool Adventure::Md2Animator::GetAnimation(const std::string& name, Animation& animation) const
+bool Adventure::Md2Animator::GetAnimation(const String& name, Animation& animation) const
 {
-	std::map<std::string, Animation>::const_iterator a = animations.find(name);
+	AnimationMap::const_iterator a = animations.find(name);
 	
 	if (a != animations.end())
 	{
@@ -550,7 +550,7 @@ void Adventure::Md2Animator::UpdateAnimation(float delta)
 	}
 }
 
-bool Adventure::Md2Animator::SwitchTo(const std::string& name)
+bool Adventure::Md2Animator::SwitchTo(const String& name)
 {
 	Animation newAnimation;
 	

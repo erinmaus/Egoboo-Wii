@@ -61,7 +61,7 @@ namespace Adventure
 				AllocatedFlag = 0x80000000,
 				
 				// Size indicates the amount of blocks allocated or unallocated
-				// Therefore, the resulting value is (blocks[i] & SizeMask) * size
+				// Therefore, the resulting value in bytes is (blocks[i] & SizeMask) * size
 				SizeMask = 0x00FFFFFF
 			};
 			

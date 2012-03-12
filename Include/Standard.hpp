@@ -13,31 +13,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Egoboo-Wii.  If not, see <http:// www.gnu.org/licenses/>.
 
-#ifndef ADVENTURE_SYSTEM_INTERFACE_HPP_
-#define ADVENTURE_SYSTEM_INTERFACE_HPP_
+#ifndef ADVENTURE_STANDARD_HPP_
+#define ADVENTURE_STANDARD_HPP_
 
-#include "Standard.hpp"
+#include <map>
+#include <string>
+#include <vector>
+
+#include "StdAllocator.hpp"
 
 namespace Adventure
 {
-	class IDisplay;
-	class Allocator;
-	
-	class ISystem
+	template <typename T>
+	struct Vector
 	{
-		public:
-			virtual ~ISystem() { };
-			
-			virtual IDisplay& GetDisplay() = 0;
-			virtual const IDisplay& GetDisplay() const = 0;
-			
-			virtual bool SetApplicationPath(const String& path) = 0;
-			virtual const String& GetApplicationPath() const = 0;
-			
-			virtual String BuildPath(const String& path) const = 0;
-			
-			virtual bool Initialize() = 0;
+		typedef std::vector<T, StdAllocator<T> > Type;
 	};
+	
+	template <typename Key, typename T>
+	struct Map
+	{
+		typedef std::map<Key, T, std::less<Key>, StdAllocator<T> > Type;
+	};
+	
+	typedef std::basic_string<char, std::char_traits<char>, StdAllocator<char> > String;
 }
 
 #endif

@@ -39,4 +39,19 @@ void _adventure_assert(const char* statement, const char* filename, int line, bo
 #define TRACE(module, ...)
 #define ASSERT(statement)
 #endif
+
+#include <ogc/lwp_watchdog.h>
+
+typedef unsigned long long profile_int_t;
+
+#define PROFILE_BEGIN(i) \
+	unsigned long long __profile_start##i = ticks_to_millisecs(gettime())
+
+#define PROFILE_END(i) \
+	unsigned long long __profile_end##i = ticks_to_millisecs(gettime()); \
+	unsigned long long __profile_dif##i = __profile_end##i - __profile_start##i
+	
+#define PROFILE_GET_DIFFERENCE(i, v) \
+	v = __profile_dif##i
+	
 #endif
