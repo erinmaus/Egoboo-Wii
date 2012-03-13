@@ -38,6 +38,7 @@ void _adventure_assert(const char* statement, const char* filename, int line, bo
 #else
 #define TRACE(module, ...)
 #define ASSERT(statement)
+#define DEBUG_INIT_TELNET(timeout)
 #endif
 
 #include <ogc/lwp_watchdog.h>

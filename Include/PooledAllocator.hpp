@@ -27,7 +27,7 @@ namespace Adventure
 		public:
 			// Block count and block size should be multiples of two
 			// Note: this method reserves some blocks for internal use
-			PooledAllocator(Allocator* base, AllocatorSizeType blockSize, int blockCount);
+			PooledAllocator(Allocator* base, AllocatorSizeType blockSize, AllocatorSizeType blockCount, const char* name = "anonymous");
 			~PooledAllocator();
 			
 			void* Allocate(AllocatorSizeType request);
@@ -38,18 +38,28 @@ namespace Adventure
 			// Marks all memory as free
 			void Reset();
 			
+			// Gets a value indicating if the pool is valid
 			inline bool IsValid() const { return pool != NULL; }
 			
+			// Gets the size of a block, in bytes
 			inline int GetBlockSize() const { return size; }
 			
 			// Gets the reserved block count
 			inline int GetReservedBlockCount() const { return reserved; }
 			
-			// Maximum capacity, including reserved blocks, in blocks
-			inline AllocatorSizeType GetCapacity() const { return count; }
+			// Gets the maximum amount of blocks, excluding the reserved portion
+			inline AllocatorSizeType GetTotalBlockCount() const { return count; }
 			
-			// Maximum capacity, excluding reserved blocks, in blocks
-			inline AllocatorSizeType GetSize() const { return (count - reserved); }
+			// Gets the amount of non-reserved blocks
+			// Note: This does not indicate the true memory usage. In fact, it will only be correct in an empty pool!
+			inline AllocatorSizeType GetAvailableBlockCount() const { return (count - reserved); }
+			
+			// Gets the maximum amount of memory available for use in bytes
+			// Note: This does not indicate true memory usage, simply the potential; use GetMemoryUsage() for that
+			inline AllocatorSizeType GetAvailableMemory() const
+			{
+				return GetAvailableBlockCount() * size;
+			}
 			
 			// Gets the amount of memory, rounded to the nearest block, allocated
 			// The value is in bytes
@@ -65,21 +75,24 @@ namespace Adventure
 				SizeMask = 0x00FFFFFF
 			};
 			
-			typedef int BlockInfo;
+			typedef unsigned int BlockInfo;
 			
 			static const BlockInfo NullBlockInfo = 0;
 			
+			static const AllocatorSizeType MinBlockSize = 32;
+			
 		private:
 			Allocator* base;
+			const char* name;
 			
 			void* pool;
 			void* end;
 			
-			int reserved;
+			AllocatorSizeType reserved;
 			BlockInfo* blocks;
 			
 			AllocatorSizeType size;
-			int count;
+			AllocatorSizeType count;
 	};
 }
 

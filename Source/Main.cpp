@@ -22,6 +22,7 @@
 #include "SpecularEffect.hpp"
 #include "ElementArray.hpp"
 #include "File.hpp"
+#include "FileSystem.hpp"
 #include "Image.hpp"
 #include "ITexture.hpp"
 #include "Matrix.hpp"
@@ -31,6 +32,9 @@
 #include "WiiDisplay.hpp"
 #include "WiiSystem.hpp"
 #include "WiiAllocator.hpp"
+
+#define CHARACTERS_ROW 10
+#define CHARACTER_COUNT CHARACTERS_ROW * CHARACTERS_ROW
 
 struct Character
 {
@@ -78,17 +82,21 @@ bool LoadCharacter(Character& character, Adventure::ISystem& system, Adventure::
 
 int main(int argumentCount, char** arguments)
 {
+	// Initialize file system services
+	Adventure::FileSystem fileSystem;
+	
+	// Create allocators
 	Adventure::WiiAllocator baseAllocator;
-	Adventure::PooledAllocator texturePool(&baseAllocator, 32, 0x40000);
-	Adventure::PooledAllocator elementPool(&baseAllocator, 32, 0x40000);
-	Adventure::PooledAllocator scratchPool(&baseAllocator, 32, 0x40000);
-	Adventure::PooledAllocator standardPool(&baseAllocator, 32, 0xffff);
+	Adventure::PooledAllocator texturePool(&baseAllocator, 32, 0x40000, "texture");
+	Adventure::PooledAllocator elementPool(&baseAllocator, 32, 0x40000, "element");
+	Adventure::PooledAllocator scratchPool(&baseAllocator, 32, 0x40000, "scratch");
+	Adventure::PooledAllocator standardPool(&baseAllocator, 32, 0xFFFF, "standard");
 	
 	Adventure::StdAllocatorBase::SetBase(&standardPool);
 	
-	Adventure::WiiSystem system;
+	//ASSERT(false);
 	
-	system.SetArguments(argumentCount, (const char**)arguments);
+	Adventure::WiiSystem system;
 	
 	if (!system.Initialize())
 	{
@@ -98,6 +106,8 @@ int main(int argumentCount, char** arguments)
 	}
 	TRACE(DEBUG_GENERAL, "System initialized");
 	
+	system.SetArguments(argumentCount, (const char**)arguments);
+	
 	Adventure::IDisplay& display = system.GetDisplay();
 	display.SetTextureAllocator(&texturePool);
 	
@@ -105,33 +115,42 @@ int main(int argumentCount, char** arguments)
 	if (!LoadCharacter(character, system, &elementPool, &scratchPool))
 	{
 		TRACE(DEBUG_GENERAL, "Could not create Loggy!");
-		TRACE(DEBUG_GENERAL, "Element pool usage: %d out of %d", elementPool.GetMemoryUsage(), elementPool.GetSize() * elementPool.GetBlockSize());
+		TRACE(DEBUG_GENERAL, "Element pool usage: %d out of %d", elementPool.GetMemoryUsage(), elementPool.GetAvailableMemory());
 		TRACE(DEBUG_GENERAL, "Scratch pool usage: %d", scratchPool.GetMemoryUsage());
 		
 		return 1;
 	}
 	
 	character.Animator->SetInterval(1.0f / 8.0f);
-	if (!character.Animator->SwitchTo("DA"))
-	{
-		TRACE(DEBUG_GENERAL, "Could not switch to animation DA");
-	}
+	ASSERT(character.Animator->SwitchTo("WB"));
+	//if (!character.Animator->SwitchTo("WB"))
+	//{
+		//TRACE(DEBUG_GENERAL, "Could not switch to animation WB");
+	//}
 	
-	Adventure::ModelFrame diffuseFrame, specularFrame;
-	if (!character.Animator->InitializeFrame(diffuseFrame, &elementPool))
+	Adventure::ModelFrame diffuseFrame[CHARACTER_COUNT], specularFrame[CHARACTER_COUNT];
+	//Adventure::ModelFrame diffuseFrame[CHARACTER_COUNT];
+	
+	for (int i = 0; i < CHARACTER_COUNT; i++)
 	{
-		TRACE(DEBUG_GENERAL, "Could not intialize diffuse frame");
+		if (!character.Animator->InitializeFrame(diffuseFrame[i], &elementPool))
+		{
+			TRACE(DEBUG_GENERAL, "Could not intialize diffuse frame %d", i);
+			
+			return 1;
+		}
+		TRACE(DEBUG_GENERAL, "Initialized diffuse frame %d", i);
 		
-		return 1;
+		if (!character.Animator->InitializeFrame(specularFrame[i], &elementPool))
+		{
+			TRACE(DEBUG_GENERAL, "Could not initialize specular frame %d", i);
+			
+			return 1;
+		}
+		TRACE(DEBUG_GENERAL, "Initialize specular frame %d", i);
 	}
 	
-	if (!character.Animator->InitializeFrame(specularFrame, &elementPool))
-	{
-		TRACE(DEBUG_GENERAL, "Could not initialize specular frame");
-		
-		return 1;
-	}
-	
+	TRACE(DEBUG_GENERAL, "Memory usage for standard pool: %ld bytes", standardPool.GetMemoryUsage());
 	TRACE(DEBUG_GENERAL, "Memory usage for texture pool: %ld bytes", texturePool.GetMemoryUsage());
 	TRACE(DEBUG_GENERAL, "Memory usage for element pool: %ld bytes", elementPool.GetMemoryUsage());
 	TRACE(DEBUG_GENERAL, "Memory usage for scratch pool: %ld bytes", scratchPool.GetMemoryUsage());
@@ -139,7 +158,8 @@ int main(int argumentCount, char** arguments)
 	Adventure::GraphicsMode mode = display.GetGraphicsMode();
 	Adventure::Matrix projection = Adventure::Matrix::Perspective(M_PI * 0.25f, (float)mode.Width / (float)mode.Height, 1.0f, 1000.0f);
 	float rotation = 0.0f;
-	int frames = 720;
+	int frames = 120;
+	profile_int_t bestFrame = (profile_int_t)-1;
 	
 	PROFILE_BEGIN(1);
 	
@@ -148,8 +168,8 @@ int main(int argumentCount, char** arguments)
 		rotation += 0.005f;
 		
 		// Calculate camera
-		Adventure::Vector3 eye = Adventure::Vector3(cos(rotation * M_PI * 2) * 128.0f, 16.0f, sin(rotation * M_PI * 2) * 128.0f);
-		Adventure::Vector3 target = Adventure::Vector3(0.0f, 0.0f, 0.0f);
+		Adventure::Vector3 eye = Adventure::Vector3(cos(rotation * M_PI * 2) * 256.0f, 128.0f, sin(rotation * M_PI * 2) * 256.0f);
+		Adventure::Vector3 target = Adventure::Vector3(0.0f, -32.0f, 0.0f);
 		Adventure::Matrix view = Adventure::Matrix::LookAt(eye, target, Adventure::Vector3(0.0f, 1.0f, 0.0f));
 		Adventure::Matrix x = Adventure::Matrix::Rotate(Adventure::Vector3(1.0f, 0.0f, 0.0f), M_PI * 0.5f);
 		Adventure::Matrix y = Adventure::Matrix::Rotate(Adventure::Vector3(0.0f, 1.0f, 0.0f), M_PI * 1.5f);
@@ -159,11 +179,15 @@ int main(int argumentCount, char** arguments)
 		character.Animator->Render();
 		
 		display.Begin();
-		for (int i = -4; i < 4; i++)
+		PROFILE_BEGIN(2);
+		for (int i = 0; i < CHARACTERS_ROW; i++)
 		{
-			for (int j = -4; j < 4; j++)
+			for (int j = 0; j < CHARACTERS_ROW; j++)
 			{
-				Adventure::Matrix world = Adventure::Matrix::Translate(Adventure::Vector3(i * 32, 0.0f, j * 32)) * modelRotation;
+				float posX = i * 32 - CHARACTERS_ROW / 2 * 32;
+				float posZ = j * 32 - CHARACTERS_ROW / 2 * 32;
+				int index = j * CHARACTERS_ROW + i;
+				Adventure::Matrix world = Adventure::Matrix::Translate(Adventure::Vector3(posX, 0.0f, posZ)) * modelRotation;
 				
 				// Create diffuse light
 				Adventure::DiffuseEffect diffuseLight;
@@ -171,13 +195,13 @@ int main(int argumentCount, char** arguments)
 				diffuseLight.SetCameraPosition(eye - target);
 				diffuseLight.SetPosition(Adventure::Vector3(0.0f, 8.0f, -16.0f));
 				diffuseLight.SetColor(Adventure::Color(1.0f, 1.0f, 1.0f));
-				diffuseLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(256.0f));
+				diffuseLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(128.0f));
 				
 				// Create specular light
 				Adventure::SpecularEffect specularLight;
 				specularLight.SetWorld(world);
 				specularLight.SetCameraPosition(eye - target);
-				specularLight.SetPosition(Adventure::Vector3(0.0f, 16.0f, -24.0f));
+				specularLight.SetPosition(Adventure::Vector3(0.0f, 16.0f, 0.0f));
 				specularLight.SetColor(Adventure::Color(1.0f, 1.0f, 1.0f));
 				specularLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(128.0f));
 				specularLight.SetPower(0.0f);
@@ -187,15 +211,22 @@ int main(int argumentCount, char** arguments)
 				character.Texture->Bind();
 				
 				display.SetLightingMode(Adventure::IDisplay::Diffuse);
-				character.Animator->BuildCurrentFrame(diffuseFrame, diffuseLight);
-				diffuseFrame.Draw(display);
+				character.Animator->BuildCurrentFrame(diffuseFrame[index], diffuseLight);
+				diffuseFrame[index].Draw(display);
 				
 				display.SetLightingMode(Adventure::IDisplay::Specular);
-				character.Animator->BuildCurrentFrame(specularFrame, specularLight);
-				specularFrame.Draw(display);
+				character.Animator->BuildCurrentFrame(specularFrame[index], specularLight);
+				specularFrame[index].Draw(display);
 			}
 		}
+		PROFILE_END(2);
 		display.End();
+		
+		profile_int_t previous;
+		PROFILE_GET_DIFFERENCE(2, previous);
+		
+		if (previous < bestFrame)
+			bestFrame = previous;
 	}
 	
 	PROFILE_END(1);
@@ -203,8 +234,40 @@ int main(int argumentCount, char** arguments)
 	profile_int_t elapsed;
 	PROFILE_GET_DIFFERENCE(1, elapsed);
 	
-	FILE* output = fopen("sd:/Profile.txt", "a");
-	fprintf(output, "Profile run = %llu milliseconds\n", elapsed);
+	FILE* output = fopen("sd:/Profile.txt", "w");
+	fprintf(output, "Profile run: %llu milliseconds\n", elapsed);
+	fflush(output);
+	
+	fprintf(output, "Average profile frame length: %f milliseconds\n", elapsed / 120.0f);
+	fflush(output);
+	
+	fprintf(output, "Best draw time: %llu milliseconds\n", bestFrame);
+	fflush(output);
+	
+	fprintf(output, "Element pool memory usage: %lu of %lu (%f%%)\n",
+		elementPool.GetMemoryUsage(),
+		elementPool.GetAvailableMemory(),
+		(float)elementPool.GetMemoryUsage() / elementPool.GetAvailableMemory() * 100);
+	fflush(output);
+	
+	fprintf(output, "Texture pool memory usage: %lu of %lu (%f%%)\n",
+		texturePool.GetMemoryUsage(),
+		texturePool.GetAvailableMemory(),
+		(float)texturePool.GetMemoryUsage() / texturePool.GetAvailableMemory() * 100);
+	fflush(output);
+	
+	fprintf(output, "Scratch pool memory usage: %lu of %lu (%f%%)\n",
+		scratchPool.GetMemoryUsage(),
+		scratchPool.GetAvailableMemory(),
+		(float)scratchPool.GetMemoryUsage() / scratchPool.GetAvailableMemory() * 100);
+	fflush(output);
+	
+	fprintf(output, "Standard pool memory usage: %lu of %lu (%f%%)\n",
+		standardPool.GetMemoryUsage(),
+		standardPool.GetAvailableMemory(),
+		(float)standardPool.GetMemoryUsage() / standardPool.GetAvailableMemory() * 100);
+	fflush(output);
+	
 	fclose(output);
 	
 	return 0;

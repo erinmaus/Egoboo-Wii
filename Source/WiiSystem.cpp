@@ -21,7 +21,6 @@ const char* Adventure::WiiSystem::DefaultApplicationPath = "sd:";
 
 Adventure::WiiSystem::WiiSystem()
 {
-	applicationPath = DefaultApplicationPath;
 }
 
 Adventure::WiiSystem::~WiiSystem()
@@ -79,16 +78,6 @@ Adventure::String Adventure::WiiSystem::BuildPath(const String& path) const
 
 bool Adventure::WiiSystem::Initialize()
 {
-	if (!fatInitDefault())
-		return false;
-
-#ifdef ADVENTURE_DEBUG
-	{
-		remove(ADVENTURE_DEBUG_OUTPUT);
-	}
-#endif
-	TRACE(DEBUG_SYSTEM, "Initialized filesystem");
-	
 	if (!display.Initialize())
 		return false;
 	TRACE(DEBUG_SYSTEM, "Initialized display");

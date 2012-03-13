@@ -25,7 +25,7 @@ INCLUDES	:=	Include
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -O0 -W -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS	=
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -34,6 +34,12 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
 LIBS	:=	-lfat -lwiiuse -lbte -logc -lm
+
+ifdef DEBUG
+	CFLAGS = -g -O0 -W -Wall -Wno-unused-parameter $(MACHDEP) $(INCLUDE) -include Debug.hpp
+else
+	CFLAGS = -O2 -W -Wall -Wno-unused-parameter $(MACHDEP) $(INCLUDE) -DNDEBUG -include Debug.hpp
+endif
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -105,7 +111,11 @@ clean:
 	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).dol
 #---------------------------------------------------------------------------------
 run:
-	wiiload $(OUTPUT).dol
+	@[ -d Adventure ] || mkdir -p Adventure
+	@cp $(OUTPUT).dol Adventure/boot.dol
+	@rm -fr egoboowii.zip
+	@7za a egoboowii.zip Adventure > nul
+	wiiload egoboowii.zip
 
 #---------------------------------------------------------------------------------
 else

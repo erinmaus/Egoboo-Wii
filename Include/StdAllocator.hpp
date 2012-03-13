@@ -101,7 +101,7 @@ namespace Adventure
 			
 			size_type max_size() const throw()
 			{
-				return StdAllocatorBase::GetBase()->GetSize() * StdAllocatorBase::GetBase()->GetBlockSize();
+				return StdAllocatorBase::GetBase()->GetAvailableMemory();
 			}
 			
 			void construct(pointer p, const_reference val)

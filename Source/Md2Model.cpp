@@ -348,9 +348,9 @@ Adventure::Md2Model* Adventure::Md2Model::LoadFromFile(File& file, Allocator* al
 		file.GetStream().read(nameBuffer, 16);
 		nameBuffer[15] = 0;
 		
-		model->frames[i].Name = nameBuffer;
-		
 		TRACE(DEBUG_FILE_LOADING, "Found frame %s at index %d of %d", nameBuffer, i + 1, header.FrameCount);
+		
+		model->frames[i].Name = nameBuffer;
 		
 		model->frames[i].Vertices = new (allocator) Md2Vertex[header.PositionCount];
 		
@@ -361,6 +361,8 @@ Adventure::Md2Model* Adventure::Md2Model::LoadFromFile(File& file, Allocator* al
 			file.Read(model->frames[i].Vertices[j].Z);
 			file.Read(model->frames[i].Vertices[j].Normal);
 		}
+		
+		TRACE(DEBUG_FILE_LOADING, "Loaded frame.");
 	}
 	
 	TRACE(DEBUG_FILE_LOADING, "Loaded frames");
@@ -537,7 +539,7 @@ void Adventure::Md2Animator::UpdateAnimation(float delta)
 {
 	currentDelta += delta;
 	
-	if (currentDelta > interval)
+	if (currentDelta >= interval)
 	{
 		currentFrame = nextFrame;
 		

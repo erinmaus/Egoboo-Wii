@@ -18,9 +18,11 @@
 
 #include "PooledAllocator.hpp"
 
-Adventure::PooledAllocator::PooledAllocator(Allocator* base, AllocatorSizeType blockSize, int blockCount)
-	: base(base)
+Adventure::PooledAllocator::PooledAllocator(Allocator* base, AllocatorSizeType blockSize, AllocatorSizeType blockCount, const char* name)
+	: base(base), name(name)
 {
+	ASSERT(blockSize >= MinBlockSize);
+	
 	size = blockSize;
 	count = blockCount;
 	
@@ -29,7 +31,7 @@ Adventure::PooledAllocator::PooledAllocator(Allocator* base, AllocatorSizeType b
 	if (memory)
 	{
 		blocks = (BlockInfo*)memory;
-		reserved = count / size * sizeof(BlockInfo);
+		reserved = (count / sizeof(BlockInfo)) / (size / MinBlockSize);
 		
 		// Always reserved one block
 		// A value of zero only occurs when the reserved count is less than
@@ -37,7 +39,9 @@ Adventure::PooledAllocator::PooledAllocator(Allocator* base, AllocatorSizeType b
 		if (reserved == 0)
 			reserved = 1;
 		
-		assert(reserved < blockCount);
+		ASSERT(reserved < blockCount);
+		
+		TRACE(DEBUG_ALLOCATOR_CRITICAL, "Reserved %d blocks for %d block entries in %s pool", reserved, count / size, name);
 		
 		Reset();
 		
@@ -57,10 +61,10 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 	AllocatorSizeType blockCount;
 	bool blockFree = false;
 	
-	TRACE(DEBUG_ALLOCATOR_CRITICAL, "Request to allocate %ld bytes...", request);
+	TRACE(DEBUG_ALLOCATOR_CRITICAL, "Request to allocate %ld bytes from %s pool...", request, name);
 	
 	// Find the first available free block in the block info array
-	while (blockIndex < GetSize())
+	while (blockIndex < GetAvailableBlockCount())
 	{
 		BlockInfo info = blocks[blockIndex];
 		blockCount = info & SizeMask;
@@ -79,6 +83,8 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 					info,
 					blockFree ? "insufficient size" : "already allocated",
 					blockCount * size);
+				
+				ASSERT(blockCount > 0);
 		}
 #endif
 		
@@ -95,6 +101,13 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 	}
 	
 	unsigned int blocksRequested = ((request + (size - 1)) & ~(size - 1)) / size;
+	
+	// This can happen when a requested size in bytes is less than the block size in bytes
+	if (blocksRequested == 0)
+	{
+		TRACE(DEBUG_ALLOCATOR, "Block requested adjusted to 1");
+		blocksRequested = 1;
+	}
 		
 	// A block request cannot be over SizeMask in size, else the size
 	// stored in the block info would be invalid
@@ -111,14 +124,15 @@ void* Adventure::PooledAllocator::Allocate(AllocatorSizeType request)
 	// Mark the first free block after this block request as unallocated
 	// An unallocated block has the AllocatedFlag unset and has a valid
 	// SizeMask
-	int nextBlockIndex = blockIndex + blocksRequested;
+	unsigned int nextBlockIndex = blockIndex + blocksRequested;
 	
 	TRACE(DEBUG_ALLOCATOR, "Next block index: %d", nextBlockIndex);
 	
 	// As long as the next block is within bounds, set it
-	if (nextBlockIndex < GetSize() && nextBlockIndex != 0)
+	if (nextBlockIndex < GetAvailableBlockCount() && nextBlockIndex != 0)
 	{
 		blocks[nextBlockIndex] = blockCount - blocksRequested;
+		TRACE(DEBUG_ALLOCATOR, "Next block data: 0x%lx", blocks[nextBlockIndex]);
 	}
 	
 	TRACE(DEBUG_ALLOCATOR_CRITICAL, "Allocated %p (%ld bytes) at block index %d [0x%lx]", (char*)pool + blockIndex * size, blocksRequested * size, blockIndex, blocks[blockIndex]);
@@ -131,7 +145,7 @@ void Adventure::PooledAllocator::Clear(void* memory, AllocatorSizeType request)
 {
 	// No further testing is done in this method because the memory pointer
 	// can be offset from the original pointer allocated
-	assert(memory >= pool && memory < end);
+	ASSERT(memory >= pool && memory < end);
 	
 	base->Clear(memory, request);
 	
@@ -141,7 +155,7 @@ void Adventure::PooledAllocator::Clear(void* memory, AllocatorSizeType request)
 void Adventure::PooledAllocator::Flush(void* memory, AllocatorSizeType request)
 {
 	// See Clear why no further testing is performed
-	assert(memory >= pool && memory < end);
+	ASSERT(memory >= pool && memory < end);
 	
 	base->Flush(memory, request);
 	
@@ -150,53 +164,63 @@ void Adventure::PooledAllocator::Flush(void* memory, AllocatorSizeType request)
 
 void Adventure::PooledAllocator::Deallocate(void* memory)
 {
-	assert(memory >= pool && memory < end);
+	ASSERT(memory >= pool && memory < end);
 	
 	// Find the memory allocation info and mark as unallocated
-	int currentBlockIndex = (int)((char*)memory - (char*)pool) / size;
+	unsigned int currentBlockIndex = (int)((char*)memory - (char*)pool) / size;
 	
-	TRACE(DEBUG_ALLOCATOR, "Deallocating block starting at %p (block %d)...", memory, currentBlockIndex);
+	TRACE(DEBUG_ALLOCATOR, "Deallocating block starting at %p (block %d) from %s pool...", memory, currentBlockIndex, name);
 	
 	blocks[currentBlockIndex] &= ~AllocatedFlag;
 	
 	// Merge with the previous block info, if necessary
-	int previousBlockIndex = currentBlockIndex - 1;
-	
-	// Since the implementation only keeps track of the distance between
-	// the current block and the next, manually go backwards and find
-	// the previous block
-	while (blocks[previousBlockIndex] == NullBlockInfo && previousBlockIndex > 0)
-		previousBlockIndex--;
-		
-	if (previousBlockIndex >= 0 && !(blocks[previousBlockIndex] & AllocatedFlag))
+	if (currentBlockIndex != 0)
 	{
-		TRACE(DEBUG_ALLOCATOR, "Merged previous block %d [0x%lx].", previousBlockIndex, blocks[previousBlockIndex]);
+		unsigned int previousBlockIndex = currentBlockIndex;
 		
-		blocks[previousBlockIndex] = blocks[currentBlockIndex] + blocks[previousBlockIndex];
-		blocks[currentBlockIndex] = NullBlockInfo;
-		
-		// Set the current index to the previous, since the current one is now invalid
-		currentBlockIndex = previousBlockIndex;
+		// Since the implementation only keeps track of the distance between
+		// the current block and the next, manually go backwards and find
+		// the previous block
+		while (blocks[previousBlockIndex] == NullBlockInfo && previousBlockIndex > 0)
+			previousBlockIndex--;
+			
+		ASSERT(previousBlockIndex <= currentBlockIndex);
+			
+		if (previousBlockIndex != currentBlockIndex && !(blocks[previousBlockIndex] & AllocatedFlag))
+		{
+			TRACE(DEBUG_ALLOCATOR, "Merged previous block %d [0x%lx]", previousBlockIndex, blocks[previousBlockIndex]);
+			
+			blocks[previousBlockIndex] = blocks[currentBlockIndex] + blocks[previousBlockIndex];
+			blocks[currentBlockIndex] = NullBlockInfo;
+			
+			// Set the current index to the previous, since the current one is now invalid
+			currentBlockIndex = previousBlockIndex;
+		}
 	}
 	
 	// Merge with the next block info, if necessary
-	int nextBlockIndex = currentBlockIndex + (blocks[currentBlockIndex] & SizeMask);
+	unsigned int nextBlockIndex = currentBlockIndex + (blocks[currentBlockIndex] & SizeMask);
 	
 	if (nextBlockIndex < count && !(blocks[nextBlockIndex] & AllocatedFlag))
 	{
-		TRACE(DEBUG_ALLOCATOR, "Merged next block %d [0x%lx].", previousBlockIndex, blocks[previousBlockIndex]);
+		TRACE(DEBUG_ALLOCATOR, "Merged next block %d [0x%lx]", nextBlockIndex, blocks[nextBlockIndex]);
 		
-		blocks[currentBlockIndex] = (blocks[nextBlockIndex] & SizeMask) + (blocks[currentBlockIndex] & SizeMask);
+		blocks[currentBlockIndex] = (blocks[nextBlockIndex] & SizeMask) + (blocks[currentBlockIndex] & SizeMask) + 1;
 		blocks[nextBlockIndex] = NullBlockInfo;
 	}
-	
+#ifdef ADVENTURE_DEBUG
+	else
+	{
+		TRACE(DEBUG_ALLOCATOR, "Did not merge with next block %d [0x%lx]", nextBlockIndex, blocks[nextBlockIndex]);
+	}
+#endif
 	TRACE(DEBUG_ALLOCATOR, "Final block position %d with info 0x%lx", currentBlockIndex, blocks[currentBlockIndex]);
 	TRACE(DEBUG_ALLOCATOR, "Deallocated %p", memory);
 }
 
 void Adventure::PooledAllocator::Reset()
 {
-	base->Clear(blocks, reserved * size);
+	base->Clear(blocks, GetAvailableBlockCount() * size);
 	blocks[0] = count;
 }
 
@@ -205,14 +229,18 @@ Adventure::AllocatorSizeType Adventure::PooledAllocator::GetMemoryUsage() const
 	unsigned int blockIndex = 0;
 	AllocatorSizeType allocated = 0;
 	
-	while (blockIndex < GetSize())
+	while (blockIndex < GetAvailableBlockCount())
 	{
 		BlockInfo info = blocks[blockIndex];
-		int blockCount = info & SizeMask;
-		int blockFree = !(info & AllocatedFlag);
+		AllocatorSizeType blockCount = info & SizeMask;
+		bool blockFree = info & AllocatedFlag;
 		
-		if (!blockFree)
+		if (blockFree)
 			allocated += blockCount;
+		
+		TRACE(DEBUG_ALLOCATOR_CRITICAL, "Block info at index %lu: 0x%lx", blockIndex, info);
+		
+		ASSERT(blockCount > 0);
 		
 		blockIndex += blockCount;
 	}
