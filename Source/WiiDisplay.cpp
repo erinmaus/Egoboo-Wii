@@ -228,6 +228,8 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 	GX_SetArray(GX_VA_CLR0, (void*)materials, ColorArray::ElementStride);
 	GX_SetArray(GX_VA_TEX0, (void*)uvs, compressed ? CompressedVector2Array::ElementStride : Vector2Array::ElementStride);
 	
+	GX_InvVtxCache();
+	
 	GX_SetZMode(GX_ENABLE, GX_LEQUAL, GX_TRUE);
 	GX_SetCullMode(GX_CULL_BACK);
 	
@@ -245,7 +247,7 @@ void Adventure::WiiDisplay::DrawModel(const void* positions, const void* normals
 	
 	GX_End();
 	
-	GX_Flush();
+	//GX_Flush();
 }
 
 void Adventure::WiiDisplay::SetProjectionMatrix(const Matrix& matrix, ProjectionHint hint)

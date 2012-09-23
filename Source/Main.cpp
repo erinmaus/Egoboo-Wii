@@ -33,7 +33,7 @@
 #include "WiiSystem.hpp"
 #include "WiiAllocator.hpp"
 
-#define CHARACTERS_ROW 10
+#define CHARACTERS_ROW 8
 #define CHARACTER_COUNT CHARACTERS_ROW * CHARACTERS_ROW
 
 struct Character
@@ -122,14 +122,13 @@ int main(int argumentCount, char** arguments)
 	}
 	
 	character.Animator->SetInterval(1.0f / 8.0f);
-	ASSERT(character.Animator->SwitchTo("WB"));
-	//if (!character.Animator->SwitchTo("WB"))
-	//{
-		//TRACE(DEBUG_GENERAL, "Could not switch to animation WB");
-	//}
+	
+	if (!character.Animator->SwitchTo("KA"))
+	{
+		ASSERT(false);
+	}
 	
 	Adventure::ModelFrame diffuseFrame[CHARACTER_COUNT], specularFrame[CHARACTER_COUNT];
-	//Adventure::ModelFrame diffuseFrame[CHARACTER_COUNT];
 	
 	for (int i = 0; i < CHARACTER_COUNT; i++)
 	{
@@ -169,13 +168,13 @@ int main(int argumentCount, char** arguments)
 		
 		// Calculate camera
 		Adventure::Vector3 eye = Adventure::Vector3(cos(rotation * M_PI * 2) * 256.0f, 128.0f, sin(rotation * M_PI * 2) * 256.0f);
-		Adventure::Vector3 target = Adventure::Vector3(0.0f, -32.0f, 0.0f);
+		Adventure::Vector3 target = Adventure::Vector3(0.0f, -8.0f, 0.0f);
 		Adventure::Matrix view = Adventure::Matrix::LookAt(eye, target, Adventure::Vector3(0.0f, 1.0f, 0.0f));
 		Adventure::Matrix x = Adventure::Matrix::Rotate(Adventure::Vector3(1.0f, 0.0f, 0.0f), M_PI * 0.5f);
 		Adventure::Matrix y = Adventure::Matrix::Rotate(Adventure::Vector3(0.0f, 1.0f, 0.0f), M_PI * 1.5f);
 		Adventure::Matrix modelRotation = y * x;
 		
-		character.Animator->UpdateAnimation(1.0f / 60.0f);
+		character.Animator->UpdateAnimation(1 / 60.0f);
 		character.Animator->Render();
 		
 		display.Begin();
@@ -202,7 +201,7 @@ int main(int argumentCount, char** arguments)
 				specularLight.SetWorld(world);
 				specularLight.SetCameraPosition(eye - target);
 				specularLight.SetPosition(Adventure::Vector3(0.0f, 16.0f, 0.0f));
-				specularLight.SetColor(Adventure::Color(1.0f, 1.0f, 1.0f));
+				specularLight.SetColor(Adventure::Color(0.0f, 1.0f, 0.0f));
 				specularLight.SetAttenuation(Adventure::LightAttenuation::FromRadius(128.0f));
 				specularLight.SetPower(0.0f);
 				
